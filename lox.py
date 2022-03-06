@@ -1,4 +1,5 @@
 import sys
+from typing import ClassVar
 
 import parser
 import print_ast
@@ -7,7 +8,7 @@ import tokens
 
 
 class Lox:
-    had_error = False
+    had_error: ClassVar[bool] = False
 
     @staticmethod
     def run_file(filepath: str) -> None:
