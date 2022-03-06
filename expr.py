@@ -3,12 +3,6 @@ from abc import ABC, abstractmethod
 from tokens import Token
 
 
-class Expr(ABC):
-    @abstractmethod
-    def accept(self, visitor: Visitor):
-        raise NotImplementedError
-
-
 class Visitor(ABC):
     @abstractmethod
     def visit_binary_expr(self, expr):
@@ -24,6 +18,12 @@ class Visitor(ABC):
 
     @abstractmethod
     def visit_unary_expr(self, expr):
+        raise NotImplementedError
+
+
+class Expr(ABC):
+    @abstractmethod
+    def accept(self, visitor: Visitor):
         raise NotImplementedError
 
 

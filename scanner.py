@@ -1,4 +1,4 @@
-from lox import Lox
+import lox
 from tokens import Token, TokenType
 
 
@@ -79,7 +79,7 @@ class Scanner:
                 elif self.is_alpha(c):
                     self.identifier()
                 else:
-                    Lox.error(self.line, "unexpected character")
+                    lox.Lox.error(self.line, "unexpected character")
 
     def identifier(self) -> None:
         while self.is_alphanumeric(self.peek()):
@@ -109,7 +109,7 @@ class Scanner:
             self.advance()
 
         if self.is_at_end():
-            Lox.error(self.line, "unterminated string")
+            lox.Lox.error(self.line, "unterminated string")
             return
 
         self.advance()
