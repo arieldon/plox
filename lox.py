@@ -46,15 +46,16 @@ class Lox:
             return
 
     @staticmethod
-    def error(line: int, message: str) -> None:
-        report(line, "", message)
-
-    @staticmethod
-    def error(token: tokens.Token, message: str) -> None:
-        if token.token_type == tokens.TokenType.EOF:
-            Lox.report(token.line, " at end", message)
-        else:
-            Lox.report(token.line, f" at '{token.lexeme}'", message)
+    def error(item: int | tokens.Token, message: str) -> None:
+        if isinstance(item, int):
+            line = item
+            Lox.report(line, "", message)
+        elif isinstance(item, tokens.Token):
+            token = item
+            if token.token_type == tokens.TokenType.EOF:
+                Lox.report(token.line, " at end", message)
+            else:
+                Lox.report(token.line, f" at '{token.lexeme}'", message)
 
     @staticmethod
     def report(line: int, where: str, message: str) -> None:

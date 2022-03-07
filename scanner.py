@@ -24,7 +24,7 @@ class Scanner:
 
     def __init__(self, source: str):
         self.source = source
-        self.tokens = []
+        self.tokens: list[Token] = []
         self.start = 0
         self.current = 0
         self.line = 1
@@ -135,7 +135,7 @@ class Scanner:
     def peek_next(self) -> str:
         if self.current + 1 >= len(self.source):
             return "\0"
-        return source[self.current + 1]
+        return self.source[self.current + 1]
 
     def is_alpha(self, c: str) -> bool:
         assert len(c) == 1, "c must be a character."

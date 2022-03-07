@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 import expr
 from lox import Lox
 from tokens import Token, TokenType
@@ -112,7 +114,7 @@ class Parser:
     def previous(self) -> Token:
         return self.tokens[self.current - 1]
 
-    def error(self, token: Token, message: str) -> None:
+    def error(self, token: Token, message: str) -> NoReturn:
         Lox.error(token, message)
         raise ParseError()
 
