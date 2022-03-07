@@ -1,14 +1,16 @@
 import sys
 from typing import ClassVar
 
+import interpreter
 import parser
-import print_ast
 import scanner
 import tokens
 
 
 class Lox:
+    i = interpreter.Interpreter()
     had_error: ClassVar[bool] = False
+    had_runtime_error: ClassVar[bool] = False
 
     @staticmethod
     def run_file(filepath: str) -> None:
@@ -22,6 +24,8 @@ class Lox:
 
         if Lox.had_error:
             sys.exit(64)
+        elif Lox.had_runtime_error:
+            sys.exit(70)
 
     @staticmethod
     def run_prompt() -> None:
@@ -39,11 +43,13 @@ class Lox:
         s = scanner.Scanner(source)
         t = s.scan_tokens()
         p = parser.Parser(t)
-        if (expression := p.parse()):
-            print(print_ast.ASTPrinter().format(expression))
+        e = p.parse()
 
         if (Lox.had_error):
             return
+
+        if e:
+            Lox.i.interpret(e)
 
     @staticmethod
     def error(item: int | tokens.Token, message: str) -> None:
@@ -56,6 +62,11 @@ class Lox:
                 Lox.report(token.line, " at end", message)
             else:
                 Lox.report(token.line, f" at '{token.lexeme}'", message)
+
+    @staticmethod
+    def runtime_error(error: RuntimeError) -> None:
+        print(error)
+        Lox.had_runtime_error = True
 
     @staticmethod
     def report(line: int, where: str, message: str) -> None:

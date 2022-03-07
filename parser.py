@@ -1,7 +1,7 @@
 from typing import NoReturn
 
 import expr
-from lox import Lox
+import lox
 from tokens import Token, TokenType
 
 
@@ -115,7 +115,7 @@ class Parser:
         return self.tokens[self.current - 1]
 
     def error(self, token: Token, message: str) -> NoReturn:
-        Lox.error(token, message)
+        lox.Lox.error(token, message)
         raise ParseError()
 
     def synchronize(self) -> None:

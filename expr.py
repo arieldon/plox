@@ -46,7 +46,7 @@ class Grouping(Expr):
 
 
 class Literal(Expr):
-    def __init__(self, value: object) -> None:
+    def __init__(self, value: None | str | float) -> None:
         self.value = value
 
     def accept(self, visitor: Visitor):
