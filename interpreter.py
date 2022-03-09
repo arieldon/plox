@@ -9,7 +9,7 @@ class Interpreter(expr.Visitor):
             value = self.evaluate(expression)
             print(self.stringify(value))
         except RuntimeError as error:
-            lox.Lox.runtime_error(error)
+            lox.runtime_error(error)
 
     def evaluate(self, expression: expr.Expr):
         return expression.accept(self)

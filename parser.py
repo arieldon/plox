@@ -115,7 +115,7 @@ class Parser:
         return self.tokens[self.current - 1]
 
     def error(self, token: Token, message: str) -> NoReturn:
-        lox.Lox.error(token, message)
+        lox.error(token, message)
         raise ParseError()
 
     def synchronize(self) -> None:
