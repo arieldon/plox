@@ -8,7 +8,7 @@ class Interpreter(expr.Visitor):
         try:
             value = self.evaluate(expression)
             print(self.stringify(value))
-        except RuntimeError as error:
+        except RunningTimeError as error:
             lox.runtime_error(error)
 
     def evaluate(self, expression: expr.Expr):
@@ -51,7 +51,7 @@ class Interpreter(expr.Visitor):
             case tokens.TokenType.PLUS:
                 # Catch any case for PLUS where operators are not either both
                 # numbers or both strings.
-                raise RuntimeError(
+                raise RunningTimeError(
                     expression.operator, "operands must be two numbers or two strings"
                 )
 
@@ -82,12 +82,12 @@ class Interpreter(expr.Visitor):
     def check_number_operand(self, operator: tokens.Token, operand: object) -> None:
         if isinstance(operand, float):
             return
-        raise RuntimeError(operator, "operand must be a number")
+        raise RunningTimeError(operator, "operand must be a number")
 
     def check_number_operands(self, operator: tokens.Token, left: object, right: object):
         if isinstance(left, float) and isinstance(right, float):
             return
-        raise RuntimeError(operator, "operands must be a number")
+        raise RunningTimeError(operator, "operands must be a number")
 
     def is_truthy(self, item: object) -> bool:
         if not item:
@@ -114,3 +114,12 @@ class Interpreter(expr.Visitor):
             return text
 
         return str(item)
+
+
+class RunningTimeError(RuntimeError):
+    def __init__(self, token: tokens.Token, message: str) -> None:
+        self.token = token
+        self.message = message
+
+    def __str__(self):
+        return f"{self.message}\n[line {self.token.line}]"

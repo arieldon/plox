@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 
 import interpreter
@@ -62,6 +63,9 @@ def error(item: int | tokens.Token, message: str) -> None:
             report(token.line, f" at '{token.lexeme}'", message)
 
 
+def runtime_error(error: interpreter.RunningTimeError) -> None:
+    print(error)
+    had_runtime_error = True
 
 
 def report(line: int, where: str, message: str) -> None:
