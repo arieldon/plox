@@ -1,18 +1,39 @@
+import environment
 import expr
 import lox
+import stmt
 import tokens
 
 
-class Interpreter(expr.Visitor):
-    def interpret(self, expression: expr.Expr):
+class Interpreter(expr.Visitor, stmt.Visitor):
+    def __init__(self) -> None:
+        self.env = environment.Environment()
+
+    def interpret(self, statements: list[stmt.Stmt]):
         try:
-            value = self.evaluate(expression)
-            print(self.stringify(value))
+            for statement in statements:
+                self.execute(statement)
         except RunningTimeError as error:
             lox.runtime_error(error)
 
     def evaluate(self, expression: expr.Expr):
         return expression.accept(self)
+
+    def execute(self, statement: stmt.Stmt) -> None:
+        statement.accept(self)
+
+    def visit_expression_stmt(self, statement: stmt.Expression) -> None:
+        self.evaluate(statement.expression)
+
+    def visit_print_stmt(self, statement: stmt.Print) -> None:
+        value = self.evaluate(statement.expression)
+        print(self.stringify(value))
+
+    def visit_var_stmt(self, statement: stmt.Var) -> None:
+        value = None
+        if statement.initializer:
+            value = self.evaluate(statement.initializer)
+        self.env.define(statement.name.lexeme, value)
 
     def visit_binary_expr(self, expression: expr.Binary) -> None | str | float:
         left = self.evaluate(expression.left)
@@ -78,6 +99,9 @@ class Interpreter(expr.Visitor):
         # Unreachable
         assert False, "This statement should not be reached."
         return None
+
+    def visit_variable_expr(self, expression: expr.Variable) -> object:
+        return self.env.get(expression.name)
 
     def check_number_operand(self, operator: tokens.Token, operand: object) -> None:
         if isinstance(operand, float):

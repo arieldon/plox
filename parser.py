@@ -2,6 +2,7 @@ from typing import NoReturn
 
 import expr
 import lox
+import stmt
 from tokens import Token, TokenType
 
 
@@ -10,15 +11,47 @@ class Parser:
         self.tokens = tokens
         self.current = 0
 
-    def parse(self) -> expr.Expr | None:
-        try:
-            return self.expression()
-        except ParseError:
-            return None
-
+    def parse(self) -> list[stmt.Stmt]:
+        statements: list[stmt.Stmt] = []
+        while not self.is_at_end():
+            statements.append(self.declaration())
+        return statements
 
     def expression(self) -> expr.Expr:
         return self.equality()
+
+    def declaration(self) -> None | stmt.Stmt:
+        try:
+            if self.match(TokenType.VAR):
+                return self.var_declaration()
+            return self.statement()
+        except ParseError:
+            self.synchronize()
+
+    def statement(self) -> stmt.Stmt:
+        if self.match(TokenType.PRINT):
+            return self.print_statement()
+        return self.expression_statement()
+
+    def print_statement(self) -> stmt.Stmt:
+        value = self.expression()
+        self.consume(TokenType.SEMICOLON, "expect ';' after value")
+        return stmt.Print(value)
+
+    def var_declaration(self) -> stmt.Stmt:
+        name = self.consume(TokenType.IDENTIFIER, "expect variable name")
+
+        initializer = None
+        if self.match(TokenType.EQUAL):
+            initializer = self.expression()
+
+        self.consume(TokenType.SEMICOLON, "expect ';' after variable declaration")
+        return stmt.Var(name, initializer)
+
+    def expression_statement(self) -> stmt.Stmt:
+        expression = self.expression()
+        self.consume(TokenType.SEMICOLON, "expect ';' after value")
+        return stmt.Expression(expression)
 
     def equality(self) -> expr.Expr:
         expression = self.comparison()
@@ -74,6 +107,9 @@ class Parser:
 
         if self.match(TokenType.NUMBER, TokenType.STRING):
             return expr.Literal(self.previous().literal)
+
+        if self.match(TokenType.IDENTIFIER):
+            return expr.Variable(self.previous())
 
         if self.match(TokenType.LEFT_PAREN):
             expression = self.expression()

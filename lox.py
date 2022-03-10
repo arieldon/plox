@@ -7,6 +7,7 @@ import scanner
 import tokens
 
 
+intrp = None
 had_error = False
 had_runtime_error = False
 
@@ -41,14 +42,12 @@ def run(source: str) -> None:
     s = scanner.Scanner(source)
     t = s.scan_tokens()
     p = parser.Parser(t)
-    e = p.parse()
+    statements = p.parse()
+
+    intrp.interpret(statements)
 
     if (had_error):
         return
-
-    if e:
-        i = interpreter.Interpreter()
-        i.interpret(e)
 
 
 def error(item: int | tokens.Token, message: str) -> None:
@@ -74,6 +73,9 @@ def report(line: int, where: str, message: str) -> None:
 
 
 def main() -> None:
+    global intrp
+    intrp = interpreter.Interpreter()
+
     argc = len(sys.argv)
     if argc > 2:
         print(f"usage: {sys.argv[0]} [script]")

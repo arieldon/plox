@@ -20,6 +20,10 @@ class Visitor(ABC):
     def visit_unary_expr(self, expr):
         raise NotImplementedError
 
+    @abstractmethod
+    def visit_variable_expr(self, expr):
+        raise NotImplementedError
+
 
 class Expr(ABC):
     @abstractmethod
@@ -60,3 +64,11 @@ class Unary(Expr):
 
     def accept(self, visitor: Visitor):
         return visitor.visit_unary_expr(self)
+
+
+class Variable(Expr):
+    def __init__(self, name: Token) -> None:
+        self.name = name
+
+    def accept(self, visitor: Visitor):
+        return visitor.visit_variable_expr(self)
