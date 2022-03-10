@@ -44,7 +44,8 @@ def run(source: str) -> None:
     p = parser.Parser(t)
     statements = p.parse()
 
-    intrp.interpret(statements)
+    if intrp:
+        intrp.interpret(statements)
 
     if (had_error):
         return

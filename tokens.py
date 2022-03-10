@@ -61,7 +61,7 @@ class Token:
         self.literal = literal
         self.line = line
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.literal:
             return f"(LINE {self.line}, {self.token_type.name}) {self.lexeme} {self.literal}"
         return f"(LINE {self.line}, {self.token_type.name}) {self.lexeme}"

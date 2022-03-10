@@ -1,3 +1,5 @@
+from typing import Any
+
 import environment
 import expr
 import lox
@@ -9,14 +11,14 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def __init__(self) -> None:
         self.env = environment.Environment()
 
-    def interpret(self, statements: list[stmt.Stmt]):
+    def interpret(self, statements: list[stmt.Stmt]) -> None:
         try:
             for statement in statements:
                 self.execute(statement)
         except RunningTimeError as error:
             lox.runtime_error(error)
 
-    def evaluate(self, expression: expr.Expr):
+    def evaluate(self, expression: expr.Expr) -> Any:
         return expression.accept(self)
 
     def execute(self, statement: stmt.Stmt) -> None:
@@ -108,7 +110,9 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             return
         raise RunningTimeError(operator, "operand must be a number")
 
-    def check_number_operands(self, operator: tokens.Token, left: object, right: object):
+    def check_number_operands(
+        self, operator: tokens.Token, left: object, right: object
+    ) -> None:
         if isinstance(left, float) and isinstance(right, float):
             return
         raise RunningTimeError(operator, "operands must be a number")
@@ -145,5 +149,5 @@ class RunningTimeError(RuntimeError):
         self.token = token
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.message}\n[line {self.token.line}]"

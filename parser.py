@@ -14,7 +14,8 @@ class Parser:
     def parse(self) -> list[stmt.Stmt]:
         statements: list[stmt.Stmt] = []
         while not self.is_at_end():
-            statements.append(self.declaration())
+            if statement := self.declaration():
+                statements.append(statement)
         return statements
 
     def expression(self) -> expr.Expr:
@@ -27,6 +28,7 @@ class Parser:
             return self.statement()
         except ParseError:
             self.synchronize()
+        return None
 
     def statement(self) -> stmt.Stmt:
         if self.match(TokenType.PRINT):
@@ -126,7 +128,7 @@ class Parser:
                 return True
         return False
 
-    def consume(self, token_type: TokenType, message: str) -> Token | None:
+    def consume(self, token_type: TokenType, message: str) -> Token:
         if self.check(token_type):
             return self.advance()
         self.error(self.peek(), message)
