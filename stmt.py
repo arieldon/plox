@@ -8,6 +8,10 @@ import tokens
 
 class Visitor(ABC):
     @abstractmethod
+    def visit_block_stmt(self, stmt: Block) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_expression_stmt(self, stmt: Expression) -> Any:
         raise NotImplementedError
 
@@ -24,6 +28,14 @@ class Stmt(ABC):
     @abstractmethod
     def accept(self, visitor: Visitor) -> Any:
         raise NotImplementedError
+
+
+class Block(Stmt):
+    def __init__(self, statements: list[None | Stmt]) -> None:
+        self.statements = statements
+
+    def accept(self, visitor: Visitor) -> Any:
+        return visitor.visit_block_stmt(self)
 
 
 class Expression(Stmt):
