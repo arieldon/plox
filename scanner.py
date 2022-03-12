@@ -113,10 +113,7 @@ class Scanner:
             return
 
         self.advance()
-
-        string_start = self.start + 1
-        string_end = self.current - string_start - 1
-        self.add_token(TokenType.STRING, self.source[string_start:string_end])
+        self.add_token(TokenType.STRING, self.source[self.start + 1:self.current - 1])
 
     def match(self, expected: str) -> bool:
         if self.is_at_end():
