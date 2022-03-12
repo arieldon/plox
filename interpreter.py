@@ -37,6 +37,11 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             value = self.evaluate(statement.initializer)
         self.env.define(statement.name.lexeme, value)
 
+    def visit_assign_expr(self, expression: expr.Assign) -> object:
+        value = self.evaluate(expression.value)
+        self.env.assign(expression.name, value)
+        return value
+
     def visit_binary_expr(self, expression: expr.Binary) -> None | str | float:
         left = self.evaluate(expression.left)
         right = self.evaluate(expression.right)

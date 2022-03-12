@@ -7,6 +7,10 @@ from tokens import Token
 
 class Visitor(ABC):
     @abstractmethod
+    def visit_assign_expr(self, expr: Assign) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_binary_expr(self, expr: Binary) -> Any:
         raise NotImplementedError
 
@@ -31,6 +35,15 @@ class Expr(ABC):
     @abstractmethod
     def accept(self, visitor: Visitor) -> Any:
         raise NotImplementedError
+
+
+class Assign(Expr):
+    def __init__(self, name: Token, value: Expr) -> None:
+        self.name = name
+        self.value = value
+
+    def accept(self, visitor: Visitor) -> Any:
+        return visitor.visit_assign_expr(self)
 
 
 class Binary(Expr):
