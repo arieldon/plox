@@ -35,6 +35,8 @@ class Parser:
             return self.if_statement()
         if self.match(TokenType.PRINT):
             return self.print_statement()
+        if self.match(TokenType.WHILE):
+            return self.while_statement()
         if self.match(TokenType.LEFT_BRACE):
             return stmt.Block(self.block())
         return self.expression_statement()
@@ -55,6 +57,13 @@ class Parser:
         value = self.expression()
         self.consume(TokenType.SEMICOLON, "expect ';' after value")
         return stmt.Print(value)
+
+    def while_statement(self) -> stmt.Stmt:
+        self.consume(TokenType.LEFT_PAREN, "expect '(' after 'while'")
+        condition = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "expect ')' after condition")
+        body = self.statement()
+        return stmt.While(condition, body)
 
     def var_declaration(self) -> stmt.Stmt:
         name = self.consume(TokenType.IDENTIFIER, "expect variable name")

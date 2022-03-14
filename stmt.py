@@ -24,6 +24,10 @@ class Visitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_while_stmt(self, stmt: While) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_var_stmt(self, stmt: Var) -> Any:
         raise NotImplementedError
 
@@ -68,6 +72,15 @@ class Print(Stmt):
 
     def accept(self, visitor: Visitor) -> Any:
         return visitor.visit_print_stmt(self)
+
+
+class While(Stmt):
+    def __init__(self, condition: expr.Expr, body: Stmt) -> None:
+        self.condition = condition
+        self.body = body
+
+    def accept(self, visitor: Visitor) -> Any:
+        return visitor.visit_while_stmt(self)
 
 
 class Var(Stmt):
