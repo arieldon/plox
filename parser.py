@@ -80,7 +80,7 @@ class Parser:
         return statements
 
     def assignment(self) -> expr.Expr:
-        expression = self.equality()
+        expression = self.or_expr()
         if self.match(TokenType.EQUAL):
             equals = self.previous()
             value = self.assignment()
@@ -89,6 +89,22 @@ class Parser:
                 return expr.Assign(expression.name, value)
 
             self.error(equals, "invalid assignment target")
+        return expression
+
+    def or_expr(self) -> expr.Expr:
+        expression = self.and_expr()
+        while self.match(TokenType.OR):
+            operator = self.previous()
+            right = self.and_expr()
+            expression = expr.Logical(expression, operator, right)
+        return expression
+
+    def and_expr(self) -> expr.Expr:
+        expression = self.equality()
+        while self.match(TokenType.AND):
+            operator = self.previous()
+            right = self.equality()
+            expression = expr.Logical(expression, operator, right)
         return expression
 
     def equality(self) -> expr.Expr:

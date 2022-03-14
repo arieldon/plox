@@ -111,6 +111,16 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def visit_literal_expr(self, expression: expr.Literal) -> None | str | float:
         return expression.value
 
+    def visit_logical_expr(self, expression: expr.Logical) -> object:
+        left = self.evaluate(expression.left)
+        if expression.operator.token_type == tokens.TokenType.OR:
+            if self.is_truthy(left):
+                return left
+        else:
+            if not self.is_truthy(left):
+                return left
+        return self.evaluate(expression.right)
+
     def visit_grouping_expr(self, expression: expr.Grouping) -> expr.Expr:
         return expression.expression
 
