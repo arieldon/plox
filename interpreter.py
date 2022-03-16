@@ -59,6 +59,10 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
         self.evaluate(statement.expression)
 
+    def visit_function_stmt(self, statement: stmt.Function) -> None:
+        function = LoxFunction(statement)
+        self.env.define(statement.name.lexeme, function)
+
     def visit_if_stmt(self, statement: stmt.If) -> None:
         if self.is_truthy(self.evaluate(statement.condition)):
             self.execute(statement.then_branch)
@@ -235,3 +239,22 @@ class LoxCallable(ABC):
     @abstractmethod
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
         raise NotImplementedError
+
+
+class LoxFunction(LoxCallable):
+    def __init__(self, declaration: stmt.Function) -> None:
+        self.declaration = declaration
+
+    def arity(self) -> int:
+        return len(self.declaration.params)
+
+    def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        env = environment.Environment(interpreter.global_env)
+        for parameter, argument in zip(self.declaration.params, arguments):
+            env.define(parameter.lexeme, argument)
+
+        interpreter.execute_block(self.declaration.body, env)
+        return None
+
+    def __str__(self) -> str:
+        return f"<fn {self.declaration.name.lexeme}>"
