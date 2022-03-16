@@ -1,4 +1,7 @@
+from abc import ABC, abstractmethod
+from time import time
 from typing import Any
+from types import new_class
 
 import environment
 import expr
@@ -9,7 +12,21 @@ import tokens
 
 class Interpreter(expr.Visitor, stmt.Visitor):
     def __init__(self) -> None:
-        self.env = environment.Environment()
+        self.global_env = environment.Environment()
+        self.env = self.global_env
+
+        self.global_env.define(
+            "clock",
+            type(
+                "Clock",
+                (LoxCallable,),
+                {
+                    "arity": lambda _: 0,
+                    "call": lambda _, x, y: time() / 1000,
+                    "__str__": lambda _: "<native fn>",
+                },
+            )(),
+        )
 
     def interpret(self, statements: list[stmt.Stmt]) -> None:
         try:
@@ -112,6 +129,23 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         assert False, "This statement should not be reached."
         return None
 
+    def visit_call_expr(self, expression: expr.Call) -> object:
+        callee = self.evaluate(expression.callee)
+
+        arguments = []
+        for argument in expression.arguments:
+            arguments.append(self.evaluate(argument))
+
+        if not isinstance(callee, LoxCallable):
+            raise RunningTimeError(expression.paren, "can only call functions and classes")
+
+        if len(arguments) != callee.arity():
+            raise RunningTimeError(
+                expression.paren,
+                f"expected {callee.arity()} arguments, but got {len(arguments)}",
+            )
+        return callee.call(self, arguments)
+
     def visit_literal_expr(self, expression: expr.Literal) -> None | str | float:
         return expression.value
 
@@ -191,3 +225,13 @@ class RunningTimeError(RuntimeError):
 
     def __str__(self) -> str:
         return f"{self.message}\n[line {self.token.line}]"
+
+
+class LoxCallable(ABC):
+    @abstractmethod
+    def arity(self) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        raise NotImplementedError
