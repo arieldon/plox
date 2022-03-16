@@ -28,6 +28,10 @@ class Visitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_return_stmt(self, stmt: Return) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_while_stmt(self, stmt: While) -> Any:
         raise NotImplementedError
 
@@ -86,6 +90,15 @@ class Print(Stmt):
 
     def accept(self, visitor: Visitor) -> Any:
         return visitor.visit_print_stmt(self)
+
+
+class Return(Stmt):
+    def __init__(self, keyword: tokens.Token, value: None | expr.Expr) -> None:
+        self.keyword = keyword
+        self.value = value
+
+    def accept(self, visitor: Visitor) -> Any:
+        return visitor.visit_return_stmt(self)
 
 
 class While(Stmt):

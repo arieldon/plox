@@ -73,6 +73,12 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         value = self.evaluate(statement.expression)
         print(self.stringify(value))
 
+    def visit_return_stmt(self, statement: stmt.Return) -> None:
+        value = None
+        if statement.value is not None:
+            value = self.evaluate(statement.value)
+        raise Return(value)
+
     def visit_while_stmt(self, statement: stmt.While) -> None:
         while self.is_truthy(self.evaluate(statement.condition)):
             self.execute(statement.body)
@@ -253,8 +259,16 @@ class LoxFunction(LoxCallable):
         for parameter, argument in zip(self.declaration.params, arguments):
             env.define(parameter.lexeme, argument)
 
-        interpreter.execute_block(self.declaration.body, env)
+        try:
+            interpreter.execute_block(self.declaration.body, env)
+        except Return as return_value:
+            return return_value.value
         return None
 
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"
+
+
+class Return(RuntimeError):
+    def __init__(self, value: object) -> None:
+        self.value = value
