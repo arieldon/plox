@@ -58,9 +58,9 @@ def error(item: int | tokens.Token, message: str) -> None:
     elif isinstance(item, tokens.Token):
         token = item
         if token.token_type == tokens.TokenType.EOF:
-            report(token.line, " at end", message)
+            report(token.line, "at end", message)
         else:
-            report(token.line, f" at '{token.lexeme}'", message)
+            report(token.line, f"at '{token.lexeme}'", message)
 
 
 def runtime_error(error: interpreter.RunningTimeError) -> None:

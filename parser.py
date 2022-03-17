@@ -134,14 +134,14 @@ class Parser:
 
         parameters: list[Token] = []
         if not self.check(TokenType.RIGHT_BRACE):
-            parameters.append(self.consume(TokenType.IDENTIFIER, "expect paramter name"))
+            parameters.append(self.consume(TokenType.IDENTIFIER, "expect parameter name"))
             while self.match(TokenType.COMMA):
                 if len(parameters) >= 255:
                     self.error(self.peek(), "cannot exceed 255 parameters")
-                parameters.append(self.consume(TokenType.IDENTIFIER, "expect paramter name"))
+                parameters.append(self.consume(TokenType.IDENTIFIER, "expect parameter name"))
         self.consume(TokenType.RIGHT_PAREN, "expect ')' after parameters")
 
-        self.consume(TokenType.LEFT_BRACE, f"expect 'P' before {kind} body")
+        self.consume(TokenType.LEFT_BRACE, f"expect '{{' before {kind} body")
         body = self.block()
         return stmt.Function(name, parameters, body)
 

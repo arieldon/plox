@@ -234,7 +234,7 @@ class RunningTimeError(RuntimeError):
         self.message = message
 
     def __str__(self) -> str:
-        return f"{self.message}\n[line {self.token.line}]"
+        return f"[line {self.token.line}] {self.message}"
 
 
 class LoxCallable(ABC):
