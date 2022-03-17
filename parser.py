@@ -133,7 +133,7 @@ class Parser:
         self.consume(TokenType.LEFT_PAREN, f"expect '(' after {kind} name.")
 
         parameters: list[Token] = []
-        if not self.check(TokenType.RIGHT_BRACE):
+        if not self.check(TokenType.RIGHT_PAREN):
             parameters.append(self.consume(TokenType.IDENTIFIER, "expect parameter name"))
             while self.match(TokenType.COMMA):
                 if len(parameters) >= 255:
