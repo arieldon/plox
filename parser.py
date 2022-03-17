@@ -239,8 +239,11 @@ class Parser:
 
     def call(self) -> expr.Expr:
         expression = self.primary()
-        while self.match(TokenType.LEFT_PAREN):
-            expression = self.finish_call(expression)
+        while True:
+            if self.match(TokenType.LEFT_PAREN):
+                expression = self.finish_call(expression)
+            else:
+                break
         return expression
 
     def primary(self) -> expr.Expr:

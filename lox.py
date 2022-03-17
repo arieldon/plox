@@ -3,6 +3,7 @@ import sys
 
 import interpreter
 import parser
+import resolver
 import scanner
 import tokens
 
@@ -45,6 +46,8 @@ def run(source: str) -> None:
     statements = p.parse()
 
     if intrp:
+        rslvr = resolver.Resolver(intrp)
+        rslvr.resolve(statements)
         intrp.interpret(statements)
 
     if (had_error):

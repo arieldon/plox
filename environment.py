@@ -12,6 +12,18 @@ class Environment:
     def define(self, name: str, value: object) -> None:
         self.values[name] = value
 
+    def ancestor(self, distance: int) -> Environment:
+        env = self
+        for i in range(distance):
+            env = env.enclosing
+        return env
+
+    def get_at(self, distance: int, name: str) -> object:
+        return self.ancestor(distance).values[name]
+
+    def assign_at(self, distance: int, name: tokens.Token, value: object) -> None:
+        self.ancestor(distance).values[name.lexeme] = value
+
     def get(self, name: tokens.Token) -> object:
         if name.lexeme in self.values:
             return self.values[name.lexeme]

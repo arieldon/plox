@@ -13,6 +13,7 @@ import tokens
 class Interpreter(expr.Visitor, stmt.Visitor):
     def __init__(self) -> None:
         self.global_env = environment.Environment()
+        self.local_env: dict[expr.Expr, int] = {}
         self.env = self.global_env
 
         self.global_env.define(
@@ -40,6 +41,9 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def execute(self, statement: stmt.Stmt) -> None:
         statement.accept(self)
+
+    def resolve(self, expression: expr.Expr, depth: int) -> None:
+        self.local_env[expression] = depth
 
     def execute_block(
         self, statements: list[None | stmt.Stmt], env: environment.Environment
@@ -91,7 +95,12 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def visit_assign_expr(self, expression: expr.Assign) -> object:
         value = self.evaluate(expression.value)
-        self.env.assign(expression.name, value)
+
+        if (distance := self.local_env.get(expression)) is not None:
+            self.env.assign_at(distance, expression.name, value)
+        else:
+            self.global_env.assign(expression.name, value)
+
         return value
 
     def visit_binary_expr(self, expression: expr.Binary) -> None | str | float:
@@ -187,7 +196,12 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         return None
 
     def visit_variable_expr(self, expression: expr.Variable) -> object:
-        return self.env.get(expression.name)
+        return self.look_up_variable(expression.name, expression)
+
+    def look_up_variable(self, name: tokens.Token, expression: expr.Expr) -> object:
+        if (distance := self.local_env.get(expression)) is not None:
+            return self.env.get_at(distance, name.lexeme)
+        return self.global_env.get(name)
 
     def check_number_operand(self, operator: tokens.Token, operand: object) -> None:
         if isinstance(operand, float):
