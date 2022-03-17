@@ -60,7 +60,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         self.evaluate(statement.expression)
 
     def visit_function_stmt(self, statement: stmt.Function) -> None:
-        function = LoxFunction(statement)
+        function = LoxFunction(statement, self.env)
         self.env.define(statement.name.lexeme, function)
 
     def visit_if_stmt(self, statement: stmt.If) -> None:
@@ -248,14 +248,15 @@ class LoxCallable(ABC):
 
 
 class LoxFunction(LoxCallable):
-    def __init__(self, declaration: stmt.Function) -> None:
+    def __init__(self, declaration: stmt.Function, closure: environment.Environment) -> None:
         self.declaration = declaration
+        self.closure = closure
 
     def arity(self) -> int:
         return len(self.declaration.params)
 
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
-        env = environment.Environment(interpreter.global_env)
+        env = environment.Environment(self.closure)
         for parameter, argument in zip(self.declaration.params, arguments):
             env.define(parameter.lexeme, argument)
 
