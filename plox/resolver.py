@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import auto, IntEnum, unique
 
 import expr
 import interpreter
@@ -7,10 +8,16 @@ import stmt
 import tokens
 
 
+class FunctionType(IntEnum):
+    NONE = auto()
+    FUNCTION = auto()
+
+
 class Resolver(expr.Visitor, stmt.Visitor):
     def __init__(self, intrp: interpreter.Interpreter) -> None:
         self.intrp = intrp
         self.scopes: list[dict[str, bool]] = []
+        self.current_function = FunctionType.NONE
 
     def resolve(self, item: list[stmt.Stmt] | stmt.Stmt | expr.Expr) -> None:
         if isinstance(item, list):
@@ -22,13 +29,18 @@ class Resolver(expr.Visitor, stmt.Visitor):
         else:
             raise TypeError
 
-    def resolve_function(self, function: stmt.Function) -> None:
+    def resolve_function(self, function: stmt.Function, function_type: FunctionType) -> None:
+        enclosing_function = self.current_function
+        self.current_function = function_type
+
         self.begin_scope()
         for parameter in function.params:
             self.declare(parameter)
             self.define(parameter)
         self.resolve(function.body)
         self.end_scope()
+
+        self.current_function = enclosing_function
 
     def resolve_local(self, expression: expr.Expr, name: tokens.Token) -> None:
         for i in range(len(self.scopes) - 1, -1, -1):
@@ -46,6 +58,8 @@ class Resolver(expr.Visitor, stmt.Visitor):
         if len(self.scopes) == 0:
             return
         scope = self.scopes[-1]
+        if name.lexeme in scope:
+            lox.error(name, "a variable with this name already exists in this scope")
         scope[name.lexeme] = False
 
     def define(self, name: tokens.Token) -> None:
@@ -71,6 +85,9 @@ class Resolver(expr.Visitor, stmt.Visitor):
         self.resolve(statement.expression)
 
     def visit_return_stmt(self, statement: stmt.Return) -> None:
+        if self.current_function == FunctionType.NONE:
+            lox.error(statement.keyword, "cannot return from top-level code")
+
         if statement.value is not None:
             self.resolve(statement.value)
 
@@ -81,7 +98,7 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def visit_function_stmt(self, statement: stmt.Function) -> None:
         self.declare(statement.name)
         self.define(statement.name)
-        self.resolve_function(statement)
+        self.resolve_function(statement, FunctionType.FUNCTION)
 
     def visit_var_stmt(self, statement: stmt.Var) -> None:
         self.declare(statement.name)
