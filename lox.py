@@ -1,16 +1,11 @@
 from __future__ import annotations
 import sys
 
-import interpreter
-import parser
-import resolver
-import scanner
-import tokens
-
-
-intrp = None
-had_error = False
-had_runtime_error = False
+from interpreter import Interpreter
+from parser import Parser
+from resolver import Resolver
+from scanner import Scanner
+from tokens import Token, TokenType
 
 
 def run_file(filepath: str) -> None:
@@ -40,27 +35,28 @@ def run_prompt() -> None:
 
 
 def run(source: str) -> None:
-    s = scanner.Scanner(source)
-    t = s.scan_tokens()
-    p = parser.Parser(t)
-    statements = p.parse()
-
-    if intrp:
-        rslvr = resolver.Resolver(intrp)
-        rslvr.resolve(statements)
-        intrp.interpret(statements)
-
-    if (had_error):
+    scanner = Scanner(source)
+    tokens = scanner.scan_tokens()
+    parser = Parser(tokens)
+    statements = parser.parse()
+    if had_error:
         return
 
+    resolver = Resolver(interpreter)
+    resolver.resolve(statements)
+    if had_error:
+        return
 
-def error(item: int | tokens.Token, message: str) -> None:
+    interpreter.interpret(statements)
+
+
+def error(item: int | Token, message: str) -> None:
     if isinstance(item, int):
         line = item
         report(line, "", message)
-    elif isinstance(item, tokens.Token):
+    elif isinstance(item, Token):
         token = item
-        if token.token_type == tokens.TokenType.EOF:
+        if token.token_type == TokenType.EOF:
             report(token.line, "at end", message)
         else:
             report(token.line, f"at '{token.lexeme}'", message)
@@ -76,19 +72,6 @@ def report(line: int, where: str, message: str) -> None:
     had_error = True
 
 
-def main() -> None:
-    global intrp
-    intrp = interpreter.Interpreter()
-
-    argc = len(sys.argv)
-    if argc > 2:
-        print(f"usage: {sys.argv[0]} [script]")
-        sys.exit(1)
-    elif argc == 2:
-        run_file(sys.argv[1])
-    else:
-        run_prompt()
-
-
-if __name__ == "__main__":
-    main()
+interpreter = Interpreter()
+had_error = False
+had_runtime_error = False
