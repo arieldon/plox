@@ -11,6 +11,7 @@ import tokens
 class FunctionType(IntEnum):
     NONE = auto()
     FUNCTION = auto()
+    METHOD = auto()
 
 
 class Resolver(expr.Visitor, stmt.Visitor):
@@ -74,6 +75,8 @@ class Resolver(expr.Visitor, stmt.Visitor):
 
     def visit_class_stmt(self, statement: stmt.Class) -> None:
         self.declare(statement.name)
+        for method in statement.methods:
+            self.resolve_function(method, FunctionType.METHOD)
         self.define(statement.name)
 
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
@@ -123,6 +126,9 @@ class Resolver(expr.Visitor, stmt.Visitor):
         for argument in expression.arguments:
             self.resolve(argument)
 
+    def visit_get_expr(self, expression: expr.Get) -> None:
+        self.resolve(expression.item)
+
     def visit_grouping_expr(self, expression: expr.Grouping) -> None:
         self.resolve(expression.expression)
 
@@ -132,6 +138,10 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def visit_logical_expr(self, expression: expr.Logical) -> None:
         self.resolve(expression.left)
         self.resolve(expression.right)
+
+    def visit_set_expr(self, expression: expr.Set) -> None:
+        self.resolve(expression.value)
+        self.resolve(expression.item)
 
     def visit_unary_expr(self, expression: expr.Unary) -> None:
         self.resolve(expression.right)

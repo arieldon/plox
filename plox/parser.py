@@ -174,6 +174,8 @@ class Parser:
 
             if isinstance(expression, expr.Variable):
                 return expr.Assign(expression.name, value)
+            elif isinstance(expression, expr.Get):
+                return expr.Set(expression.item, expression.name, value)
 
             self.error(equals, "invalid assignment target")
         return expression
@@ -255,6 +257,9 @@ class Parser:
         while True:
             if self.match(TokenType.LEFT_PAREN):
                 expression = self.finish_call(expression)
+            if self.match(TokenType.DOT):
+                name = self.consume(TokenType.IDENTIFIER, "expect poerty name after '.'")
+                expression = expr.Get(expression, name)
             else:
                 break
         return expression

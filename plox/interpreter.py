@@ -62,8 +62,13 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def visit_class_stmt(self, statement: stmt.Class) -> None:
         self.env.define(statement.name.lexeme, None)
-        klass = LoxClass(statement.name.lexeme)
-        self.env.assign(statement.name, klass)
+
+        methods = {}
+        for method in statement.methods:
+            methods[method.name.lexeme] = LoxFunction(method, self.env)
+
+        cls = LoxClass(statement.name.lexeme, methods)
+        self.env.assign(statement.name, cls)
 
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
         self.evaluate(statement.expression)
@@ -170,6 +175,12 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             )
         return callee.call(self, arguments)
 
+    def visit_get_expr(self, expression: expr.Get) -> object:
+        item = self.evaluate(expression.item)
+        if isinstance(item, LoxInstance):
+            return item.get(expression.name)
+        raise RunningTimeError(expression.name, "only instances have properties")
+
     def visit_literal_expr(self, expression: expr.Literal) -> None | str | float:
         return expression.value
 
@@ -182,6 +193,16 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             if not self.is_truthy(left):
                 return left
         return self.evaluate(expression.right)
+
+    def visit_set_expr(self, expression: expr.Set) -> object:
+        item = self.evaluate(expression.item)
+
+        if not isinstance(item, LoxInstance):
+            raise RunningTimeError(expression.name, "only instances have fields")
+
+        value = self.evaluate(expression.value)
+        item.set(expression.name.lexeme, value)
+        return value
 
     def visit_grouping_expr(self, expression: expr.Grouping) -> expr.Expr:
         return expression.expression
@@ -289,12 +310,43 @@ class LoxFunction(LoxCallable):
         return f"<fn {self.declaration.name.lexeme}>"
 
 
-class LoxClass:
-    def __init__(self, name: str) -> None:
+class LoxClass(LoxCallable):
+    def __init__(self, name: str, methods: dict[str, LoxFunction]) -> None:
         self.name = name
+        self.methods = methods
+
+    def arity(self) -> int:
+        return 0
+
+    def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        return LoxInstance(self)
+
+    def find_method(self, name: str) -> None | LoxFunction:
+        return self.methods.get(name)
 
     def __str__(self) -> str:
         return self.name
+
+
+class LoxInstance:
+    def __init__(self, cls: LoxClass) -> None:
+        self.cls = cls
+        self.fields: dict[str, object] = {}
+
+    def get(self, name: tokens.Token) -> object:
+        if name.lexeme in self.fields:
+            return self.fields[name.lexeme]
+
+        if (method := self.cls.find_method(name.lexeme)) is not None:
+            return method
+
+        raise RunningTimeError(name, f"undefined property '{name.lexeme}'")
+
+    def set(self, name: str, value: object) -> None:
+        self.fields[name] = value
+
+    def __str__(self) -> str:
+        return f"{self.cls.name} instance"
 
 
 class Return(RuntimeError):
