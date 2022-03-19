@@ -14,11 +14,17 @@ class FunctionType(IntEnum):
     METHOD = auto()
 
 
+class ClassType(IntEnum):
+    NONE = auto()
+    CLASS = auto()
+
+
 class Resolver(expr.Visitor, stmt.Visitor):
     def __init__(self, intrp: interpreter.Interpreter) -> None:
         self.intrp = intrp
         self.scopes: list[dict[str, bool]] = []
         self.current_function = FunctionType.NONE
+        self.current_class = ClassType.NONE
 
     def resolve(self, item: list[stmt.Stmt] | stmt.Stmt | expr.Expr) -> None:
         if isinstance(item, list):
@@ -74,10 +80,20 @@ class Resolver(expr.Visitor, stmt.Visitor):
         self.end_scope()
 
     def visit_class_stmt(self, statement: stmt.Class) -> None:
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
         self.declare(statement.name)
+        self.define(statement.name)
+
+        self.begin_scope()
+        self.scopes[-1]["this"] = True
+
         for method in statement.methods:
             self.resolve_function(method, FunctionType.METHOD)
-        self.define(statement.name)
+
+        self.end_scope()
+        self.current_class = enclosing_class
 
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
         self.resolve(statement.expression)
@@ -142,6 +158,12 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def visit_set_expr(self, expression: expr.Set) -> None:
         self.resolve(expression.value)
         self.resolve(expression.item)
+
+    def visit_this_expr(self, expression: expr.This) -> None:
+        if self.current_class == ClassType.NONE:
+            lox.error(expression.keyword, "cannot use 'this' outside of a class")
+            return
+        self.resolve_local(expression, expression.keyword)
 
     def visit_unary_expr(self, expression: expr.Unary) -> None:
         self.resolve(expression.right)

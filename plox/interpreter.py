@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from time import time
 from typing import Any
@@ -204,6 +205,9 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         item.set(expression.name.lexeme, value)
         return value
 
+    def visit_this_expr(self, expression: expr.This) -> object:
+        return self.look_up_variable(expression.keyword, expression)
+
     def visit_grouping_expr(self, expression: expr.Grouping) -> expr.Expr:
         return expression.expression
 
@@ -306,6 +310,11 @@ class LoxFunction(LoxCallable):
             return return_value.value
         return None
 
+    def bind(self, instance: LoxInstance) -> LoxFunction:
+        env = environment.Environment(self.closure)
+        env.define("this", instance)
+        return LoxFunction(self.declaration, env)
+
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"
 
@@ -338,7 +347,7 @@ class LoxInstance:
             return self.fields[name.lexeme]
 
         if (method := self.cls.find_method(name.lexeme)) is not None:
-            return method
+            return method.bind(self)
 
         raise RunningTimeError(name, f"undefined property '{name.lexeme}'")
 
