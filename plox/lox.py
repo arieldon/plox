@@ -63,11 +63,15 @@ def error(item: int | Token, message: str) -> None:
 
 
 def runtime_error(error: interpreter.RunningTimeError) -> None:
+    global had_runtime_error
+
     print(error)
     had_runtime_error = True
 
 
 def report(line: int, where: str, message: str) -> None:
+    global had_error
+
     print(f"[line {line}] error {where}: {message}", file=sys.stderr)
     had_error = True
 
