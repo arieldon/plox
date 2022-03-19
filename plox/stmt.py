@@ -12,6 +12,10 @@ class Visitor(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_class_stmt(self, stmt: Class) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_expression_stmt(self, stmt: Expression) -> Any:
         raise NotImplementedError
 
@@ -53,6 +57,14 @@ class Block(Stmt):
     def accept(self, visitor: Visitor) -> Any:
         return visitor.visit_block_stmt(self)
 
+
+class Class(Stmt):
+    def __init__(self, name: tokens.Token, methods: list[Function]) -> None:
+        self.name = name
+        self.methods = methods
+
+    def accept(self, visitor: Visitor) -> Any:
+        return visitor.visit_class_stmt(self)
 
 class Expression(Stmt):
     def __init__(self, expression: expr.Expr) -> None:

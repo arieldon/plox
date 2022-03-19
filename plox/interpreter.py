@@ -60,6 +60,11 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def visit_block_stmt(self, statement: stmt.Block) -> None:
         self.execute_block(statement.statements, environment.Environment(self.env))
 
+    def visit_class_stmt(self, statement: stmt.Class) -> None:
+        self.env.define(statement.name.lexeme, None)
+        klass = LoxClass(statement.name.lexeme)
+        self.env.assign(statement.name, klass)
+
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
         self.evaluate(statement.expression)
 
@@ -282,6 +287,14 @@ class LoxFunction(LoxCallable):
 
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"
+
+
+class LoxClass:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Return(RuntimeError):
