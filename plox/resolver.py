@@ -11,6 +11,7 @@ import tokens
 class FunctionType(IntEnum):
     NONE = auto()
     FUNCTION = auto()
+    INITIALIZER = auto()
     METHOD = auto()
 
 
@@ -90,7 +91,11 @@ class Resolver(expr.Visitor, stmt.Visitor):
         self.scopes[-1]["this"] = True
 
         for method in statement.methods:
-            self.resolve_function(method, FunctionType.METHOD)
+            if method.name.lexeme == "init":
+                declaration = FunctionType.INITIALIZER
+            else:
+                declaration = FunctionType.METHOD
+            self.resolve_function(method, declaration)
 
         self.end_scope()
         self.current_class = enclosing_class
@@ -112,6 +117,8 @@ class Resolver(expr.Visitor, stmt.Visitor):
             lox.error(statement.keyword, "cannot return from top-level code")
 
         if statement.value is not None:
+            if self.current_function == FunctionType.INITIALIZER:
+                lox.error(statement.keyword, "cannot return a value from an initializer")
             self.resolve(statement.value)
 
     def visit_while_stmt(self, statement: stmt.While) -> None:

@@ -66,7 +66,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
         methods = {}
         for method in statement.methods:
-            methods[method.name.lexeme] = LoxFunction(method, self.env)
+            methods[method.name.lexeme] = LoxFunction(method, self.env, method.name.lexeme == "init")
 
         cls = LoxClass(statement.name.lexeme, methods)
         self.env.assign(statement.name, cls)
@@ -75,7 +75,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         self.evaluate(statement.expression)
 
     def visit_function_stmt(self, statement: stmt.Function) -> None:
-        function = LoxFunction(statement, self.env)
+        function = LoxFunction(statement, self.env, False)
         self.env.define(statement.name.lexeme, function)
 
     def visit_if_stmt(self, statement: stmt.If) -> None:
@@ -292,9 +292,10 @@ class LoxCallable(ABC):
 
 
 class LoxFunction(LoxCallable):
-    def __init__(self, declaration: stmt.Function, closure: environment.Environment) -> None:
+    def __init__(self, declaration: stmt.Function, closure: environment.Environment, is_initializer: bool) -> None:
         self.declaration = declaration
         self.closure = closure
+        self.is_initializer = is_initializer
 
     def arity(self) -> int:
         return len(self.declaration.params)
@@ -307,13 +308,19 @@ class LoxFunction(LoxCallable):
         try:
             interpreter.execute_block(self.declaration.body, env)
         except Return as return_value:
+            if self.is_initializer:
+                return self.closure.get_at(0, "this")
             return return_value.value
+
+        if self.is_initializer:
+            return self.closure.get_at(0, "this")
+
         return None
 
     def bind(self, instance: LoxInstance) -> LoxFunction:
         env = environment.Environment(self.closure)
         env.define("this", instance)
-        return LoxFunction(self.declaration, env)
+        return LoxFunction(self.declaration, env, self.is_initializer)
 
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"
@@ -325,10 +332,15 @@ class LoxClass(LoxCallable):
         self.methods = methods
 
     def arity(self) -> int:
-        return 0
+        if (initializer := self.find_method("init")) is None:
+            return 0
+        return initializer.arity()
 
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
-        return LoxInstance(self)
+        instance = LoxInstance(self)
+        if (initializer := self.find_method("init")) is not None:
+            initializer.bind(instance).call(interpreter, arguments)
+        return instance
 
     def find_method(self, name: str) -> None | LoxFunction:
         return self.methods.get(name)
