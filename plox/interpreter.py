@@ -71,11 +71,17 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
         self.env.define(statement.name.lexeme, None)
 
+        if statement.superclass is not None:
+            self.env = environment.Environment(self.env)
+            self.env.define("super", superclass)
+
         methods = {}
         for method in statement.methods:
             methods[method.name.lexeme] = LoxFunction(method, self.env, method.name.lexeme == "init")
 
         cls = LoxClass(statement.name.lexeme, superclass, methods)
+        if statement.superclass is not None:
+            self.env = self.env.enclosing
         self.env.assign(statement.name, cls)
 
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
@@ -211,6 +217,14 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         value = self.evaluate(expression.value)
         item.set(expression.name.lexeme, value)
         return value
+
+    def visit_super_expr(self, expression: expr.Super) -> object:
+        distance = self.local_env[expression]
+        superclass = self.env.get_at(distance, "super")
+        item = self.env.get_at(distance - 1, "this")
+        if (method := superclass.find_method(expression.method.lexeme)) is None:
+            raise RunningTimeError(expression.method, f"undefined property '{expression.method.lexeme}'")
+        return method.bind(item)
 
     def visit_this_expr(self, expression: expr.This) -> object:
         return self.look_up_variable(expression.keyword, expression)
