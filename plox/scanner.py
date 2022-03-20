@@ -59,8 +59,27 @@ class Scanner:
                 self.add_token(TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER)
             case "/":
                 if self.match("/"):
-                    while (self.peek() != "\n" and not self.is_at_end()):
+                    # Skip single-line comments.
+                    while self.peek() != "\n" and not self.is_at_end():
                         self.advance()
+                elif self.match("*"):
+                    # Skip multi-line comments.
+                    comment_start = self.line
+                    delimiters = 1
+                    while delimiters:
+                        curr = self.peek()
+                        next = self.peek_next()
+                        if next == "\0":
+                            lox.error(comment_start, "unterminated block comment")
+                            break
+                        elif curr == "/" and next == "*":
+                            delimiters += 1
+                        elif curr == "*" and next == "/":
+                            delimiters -= 1
+                        elif curr == "\n":
+                            self.line += 1
+                        self.advance()
+                    self.advance()
                 else:
                     self.add_token(TokenType.SLASH)
             case " " | "\r" | "\t":
@@ -117,7 +136,7 @@ class Scanner:
     def match(self, expected: str) -> bool:
         if self.is_at_end():
             return False
-        if self.source[self.current] != expected:
+        elif self.source[self.current] != expected:
             return False
 
         self.current += 1
