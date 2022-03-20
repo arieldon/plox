@@ -89,9 +89,6 @@ class Scanner:
                 self.line += 1
             case "\"":
                 self.string()
-            case "o":
-                if (self.match("r")):
-                    self.add_token(TokenType.OR)
             case _:
                 if self.is_digit(c):
                     self.number()
