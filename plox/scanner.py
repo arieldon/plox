@@ -85,8 +85,7 @@ class Scanner:
         while self.is_alphanumeric(self.peek()):
             self.advance()
 
-        value = Scanner.keywords.get(self.source[self.start:self.current])
-        if value:
+        if value := Scanner.keywords.get(self.source[self.start:self.current]):
             self.add_token(value)
         else:
             self.add_token(TokenType.IDENTIFIER)
@@ -136,7 +135,7 @@ class Scanner:
 
     def is_alpha(self, c: str) -> bool:
         assert len(c) == 1, "c must be a character."
-        return (c >= "a" and c <= "z") or (c >= "A" and c<= "Z") or (c == "_")
+        return (c >= "a" and c <= "z") or (c >= "A" and c <= "Z") or (c == "_")
 
     def is_alphanumeric(self, c: str) -> bool:
         assert len(c) == 1, "c must be a character."

@@ -31,7 +31,7 @@ class Environment:
         if self.enclosing:
             return self.enclosing.get(name)
 
-        raise interpreter.RunningTimeError(name, f"undefined variable '{name.lexeme}'")
+        raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
 
     def assign(self, name: tokens.Token, value: object) -> None:
         if name.lexeme in self.values:
@@ -39,4 +39,4 @@ class Environment:
         elif self.enclosing:
             self.enclosing.assign(name, value)
         else:
-            raise interpreter.RunningTimeError(name, f"undefined variable '{name.lexeme}'")
+            raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")

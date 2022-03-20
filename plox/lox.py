@@ -14,7 +14,7 @@ def run_file(filepath: str) -> None:
             source = f.read()
         run(source)
     except IOError:
-        print(f"unable to read file {filepath}", file=sys.stderr)
+        print(f"unable to read file '{filepath}'", file=sys.stderr)
         sys.exit(65)
 
     if had_error:
@@ -62,7 +62,7 @@ def error(item: int | Token, message: str) -> None:
             report(token.line, f"at '{token.lexeme}'", message)
 
 
-def runtime_error(error: interpreter.RunningTimeError) -> None:
+def runtime_error(error: interpreter.LoxRuntimeError) -> None:
     global had_runtime_error
 
     print(error)

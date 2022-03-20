@@ -30,7 +30,7 @@ class Parser:
             if self.match(TokenType.VAR):
                 return self.var_declaration()
             return self.statement()
-        except ParseError:
+        except LoxParserError:
             self.synchronize()
         return None
 
@@ -77,14 +77,16 @@ class Parser:
         else:
             initializer = self.expression_statement()
 
-        condition = None
         if not self.check(TokenType.SEMICOLON):
             condition = self.expression()
+        else:
+            condition = None
         self.consume(TokenType.SEMICOLON, "expect ';' after loop condition")
 
-        increment = None
         if not self.check(TokenType.RIGHT_PAREN):
             increment = self.expression()
+        else:
+            increment = None
         self.consume(TokenType.RIGHT_PAREN, "expect ')' after for clauses")
 
         body = self.statement()
@@ -119,9 +121,10 @@ class Parser:
 
     def return_statement(self) -> stmt.Stmt:
         keyword = self.previous()
-        value = None
         if not self.check(TokenType.SEMICOLON):
             value = self.expression()
+        else:
+            value = None
 
         self.consume(TokenType.SEMICOLON, "expect ';' after return value")
         return stmt.Return(keyword, value)
@@ -136,9 +139,10 @@ class Parser:
     def var_declaration(self) -> stmt.Stmt:
         name = self.consume(TokenType.IDENTIFIER, "expect variable name")
 
-        initializer = None
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
+        else:
+            initializer = None
 
         self.consume(TokenType.SEMICOLON, "expect ';' after variable declaration")
         return stmt.Var(name, initializer)
@@ -334,8 +338,9 @@ class Parser:
         return self.tokens[self.current - 1]
 
     def error(self, token: Token, message: str) -> NoReturn:
+        # FIXME NoReturn or None?
         lox.error(token, message)
-        raise ParseError()
+        raise LoxParserError()
 
     def synchronize(self) -> None:
         self.advance()
@@ -360,5 +365,5 @@ class Parser:
 
 
 
-class ParseError(Exception):
+class LoxParserError(Exception):
     pass

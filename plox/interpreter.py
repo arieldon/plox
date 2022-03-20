@@ -2,7 +2,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from time import time
 from typing import Any
-from types import new_class
 
 import environment
 import expr
@@ -34,7 +33,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         try:
             for statement in statements:
                 self.execute(statement)
-        except RunningTimeError as error:
+        except LoxRuntimeError as error:
             lox.runtime_error(error)
 
     def evaluate(self, expression: expr.Expr) -> Any:
@@ -65,7 +64,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         if statement.superclass is not None:
             superclass = self.evaluate(statement.superclass)
             if not isinstance(superclass, LoxClass):
-                raise RunningTimeError(statement.superclass.name, "superclass must be a class")
+                raise LoxRuntimeError(statement.superclass.name, "superclass must be a class")
         else:
             superclass = None
 
@@ -164,7 +163,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             case tokens.TokenType.PLUS:
                 # Catch any case for PLUS where operators are not either both
                 # numbers or both strings.
-                raise RunningTimeError(
+                raise LoxRuntimeError(
                     expression.operator, "operands must be two numbers or two strings"
                 )
 
@@ -180,10 +179,10 @@ class Interpreter(expr.Visitor, stmt.Visitor):
             arguments.append(self.evaluate(argument))
 
         if not isinstance(callee, LoxCallable):
-            raise RunningTimeError(expression.paren, "can only call functions and classes")
+            raise LoxRuntimeError(expression.paren, "can only call functions and classes")
 
         if len(arguments) != callee.arity():
-            raise RunningTimeError(
+            raise LoxRuntimeError(
                 expression.paren,
                 f"expected {callee.arity()} arguments, but got {len(arguments)}",
             )
@@ -193,7 +192,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         item = self.evaluate(expression.item)
         if isinstance(item, LoxInstance):
             return item.get(expression.name)
-        raise RunningTimeError(expression.name, "only instances have properties")
+        raise LoxRuntimeError(expression.name, "only instances have properties")
 
     def visit_literal_expr(self, expression: expr.Literal) -> None | str | float:
         return expression.value
@@ -212,7 +211,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         item = self.evaluate(expression.item)
 
         if not isinstance(item, LoxInstance):
-            raise RunningTimeError(expression.name, "only instances have fields")
+            raise LoxRuntimeError(expression.name, "only instances have fields")
 
         value = self.evaluate(expression.value)
         item.set(expression.name.lexeme, value)
@@ -223,7 +222,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         superclass = self.env.get_at(distance, "super")
         item = self.env.get_at(distance - 1, "this")
         if (method := superclass.find_method(expression.method.lexeme)) is None:
-            raise RunningTimeError(expression.method, f"undefined property '{expression.method.lexeme}'")
+            raise LoxRuntimeError(expression.method, f"undefined property '{expression.method.lexeme}'")
         return method.bind(item)
 
     def visit_this_expr(self, expression: expr.This) -> object:
@@ -257,14 +256,14 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def check_number_operand(self, operator: tokens.Token, operand: object) -> None:
         if isinstance(operand, float):
             return
-        raise RunningTimeError(operator, "operand must be a number")
+        raise LoxRuntimeError(operator, "operand must be a number")
 
     def check_number_operands(
         self, operator: tokens.Token, left: object, right: object
     ) -> None:
         if isinstance(left, float) and isinstance(right, float):
             return
-        raise RunningTimeError(operator, "operands must be a number")
+        raise LoxRuntimeError(operator, "operands must be a number")
 
     def is_truthy(self, item: object) -> bool:
         if not item:
@@ -293,7 +292,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         return str(item)
 
 
-class RunningTimeError(RuntimeError):
+class LoxRuntimeError(RuntimeError):
     def __init__(self, token: tokens.Token, message: str) -> None:
         self.token = token
         self.message = message
@@ -386,7 +385,7 @@ class LoxInstance:
         if (method := self.cls.find_method(name.lexeme)) is not None:
             return method.bind(self)
 
-        raise RunningTimeError(name, f"undefined property '{name.lexeme}'")
+        raise LoxRuntimeError(name, f"undefined property '{name.lexeme}'")
 
     def set(self, name: str, value: object) -> None:
         self.fields[name] = value

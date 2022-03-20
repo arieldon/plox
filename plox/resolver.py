@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import auto, IntEnum, unique
 
 import expr
-import interpreter
+from interpreter import Interpreter
 import lox
 import stmt
 import tokens
@@ -22,8 +22,8 @@ class ClassType(IntEnum):
 
 
 class Resolver(expr.Visitor, stmt.Visitor):
-    def __init__(self, intrp: interpreter.Interpreter) -> None:
-        self.intrp = intrp
+    def __init__(self, interpreter: Interpreter) -> None:
+        self.interpreter = interpreter
         self.scopes: list[dict[str, bool]] = []
         self.current_function = FunctionType.NONE
         self.current_class = ClassType.NONE
@@ -54,8 +54,13 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def resolve_local(self, expression: expr.Expr, name: tokens.Token) -> None:
         for i in range(len(self.scopes) - 1, -1, -1):
             if name.lexeme in self.scopes[i]:
-                self.intrp.resolve(expression, len(self.scopes) - 1 - i)
+                self.interpreter.resolve(expression, len(self.scopes) - 1 - i)
                 return
+
+        # for i, scope in enumerate(self.scopes[::-1], start=1):
+        #     if name.lexeme in scope:
+        #         self.interpreter.resolve(expression, i)
+        #         return
 
     def begin_scope(self) -> None:
         self.scopes.append({})
