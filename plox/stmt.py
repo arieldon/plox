@@ -59,8 +59,9 @@ class Block(Stmt):
 
 
 class Class(Stmt):
-    def __init__(self, name: tokens.Token, methods: list[Function]) -> None:
+    def __init__(self, name: tokens.Token, superclass: expr.Variable, methods: list[Function]) -> None:
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def accept(self, visitor: Visitor) -> Any:

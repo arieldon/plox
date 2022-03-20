@@ -36,6 +36,13 @@ class Parser:
 
     def class_declaration(self) -> stmt.Stmt:
         name = self.consume(TokenType.IDENTIFIER, "expect class name")
+
+        if self.match(TokenType.LESSER):
+            self.consume(TokenType.IDENTIFIER, "expect superclass name")
+            superclass = expr.Variable(self.previous())
+        else:
+            superclass = None
+
         self.consume(TokenType.LEFT_BRACE, "expect '{' before class body")
 
         methods: list[stmt.Function] = []
@@ -43,7 +50,7 @@ class Parser:
             methods.append(self.function("method"))
 
         self.consume(TokenType.RIGHT_BRACE, "expect '}' after class body")
-        return stmt.Class(name, methods)
+        return stmt.Class(name, superclass, methods)
 
     def statement(self) -> stmt.Stmt:
         if self.match(TokenType.FOR):

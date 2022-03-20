@@ -62,13 +62,20 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         self.execute_block(statement.statements, environment.Environment(self.env))
 
     def visit_class_stmt(self, statement: stmt.Class) -> None:
+        if statement.superclass is not None:
+            superclass = self.evaluate(statement.superclass)
+            if not isinstance(superclass, LoxClass):
+                raise RunningTimeError(statement.superclass.name, "superclass must be a class")
+        else:
+            superclass = None
+
         self.env.define(statement.name.lexeme, None)
 
         methods = {}
         for method in statement.methods:
             methods[method.name.lexeme] = LoxFunction(method, self.env, method.name.lexeme == "init")
 
-        cls = LoxClass(statement.name.lexeme, methods)
+        cls = LoxClass(statement.name.lexeme, superclass, methods)
         self.env.assign(statement.name, cls)
 
     def visit_expression_stmt(self, statement: stmt.Expression) -> None:
@@ -327,8 +334,9 @@ class LoxFunction(LoxCallable):
 
 
 class LoxClass(LoxCallable):
-    def __init__(self, name: str, methods: dict[str, LoxFunction]) -> None:
+    def __init__(self, name: str, superclass: LoxClass, methods: dict[str, LoxFunction]) -> None:
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def arity(self) -> int:
@@ -343,7 +351,10 @@ class LoxClass(LoxCallable):
         return instance
 
     def find_method(self, name: str) -> None | LoxFunction:
-        return self.methods.get(name)
+        if (method := self.methods.get(name)) is not None:
+            return method
+        elif self.superclass is not None:
+            return self.superclass.find_method(name)
 
     def __str__(self) -> str:
         return self.name

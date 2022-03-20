@@ -87,6 +87,11 @@ class Resolver(expr.Visitor, stmt.Visitor):
         self.declare(statement.name)
         self.define(statement.name)
 
+        if statement.superclass is not None:
+            if statement.name.lexeme == statement.superclass.name.lexeme:
+                lox.error(statement.superclass.name, "a class cannot inherit from itself")
+            self.resolve(statement.superclass)
+
         self.begin_scope()
         self.scopes[-1]["this"] = True
 
