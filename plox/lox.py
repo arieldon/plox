@@ -24,13 +24,28 @@ def run_file(filepath: str) -> None:
 
 
 def run_prompt() -> None:
+    global had_error
+
     while True:
         try:
-            line = input("> ")
+            multiline = ""
+            while True:
+                line = input("... " if multiline else ">>> ")
+                if (line := line.rstrip()).endswith("\\"):
+                    multiline += line.removesuffix("\\")
+                elif multiline:
+                    multiline += line
+                    break
+                else:
+                    break
         except EOFError:
             print()
             return
-        run(line)
+
+        if multiline:
+            run(multiline)
+        else:
+            run(line)
         had_error = False
 
 
