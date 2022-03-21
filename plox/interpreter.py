@@ -10,7 +10,7 @@ import stmt
 import tokens
 
 
-class Interpreter(expr.Visitor, stmt.Visitor):
+class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
     def __init__(self) -> None:
         self.global_env = environment.Environment()
         self.local_env: dict[expr.Expr, int] = {}

@@ -21,7 +21,7 @@ class ClassType(IntEnum):
     SUBCLASS = auto()
 
 
-class Resolver(expr.Visitor, stmt.Visitor):
+class Resolver(expr.Visitor[None], stmt.Visitor[None]):
     def __init__(self, interpreter: Interpreter) -> None:
         self.interpreter = interpreter
         self.scopes: list[dict[str, bool]] = []
