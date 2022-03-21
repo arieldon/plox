@@ -152,6 +152,8 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
                 return float(left) - float(right)
             case tokens.TokenType.SLASH:
                 self.check_number_operands(expression.operator, left, right)
+                if right == 0:
+                    raise LoxRuntimeError(expression.operator, "cannot divide by zero")
                 return float(left) / float(right)
             case tokens.TokenType.STAR:
                 self.check_number_operands(expression.operator, left, right)
