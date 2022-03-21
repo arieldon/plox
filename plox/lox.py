@@ -38,6 +38,9 @@ def run_prompt() -> None:
                     break
                 else:
                     break
+        except KeyboardInterrupt:
+            print()
+            continue
         except EOFError:
             print()
             return
