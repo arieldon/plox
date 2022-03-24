@@ -129,9 +129,8 @@ class While(Stmt):
 
 
 class Var(Stmt):
-    def __init__(self, name: tokens.Token, initializer: expr.Expr) -> None:
-        self.name = name
-        self.initializer = initializer
+    def __init__(self, variables: dict[tokens.Token, expr.Expr]) -> None:
+        self.variables = variables
 
     def accept(self, visitor: Visitor[R]) -> R:
         return visitor.visit_var_stmt(self)

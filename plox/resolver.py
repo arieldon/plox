@@ -148,10 +148,11 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         self.resolve_function(statement, FunctionType.FUNCTION)
 
     def visit_var_stmt(self, statement: stmt.Var) -> None:
-        self.declare(statement.name)
-        if statement.initializer is not None:
-            self.resolve(statement.initializer)
-        self.define(statement.name)
+        for name, initializer in statement.variables.items():
+            self.declare(name)
+            if initializer is not None:
+                self.resolve(initializer)
+            self.define(name)
 
     def visit_assign_expr(self, expression: expr.Assign) -> None:
         self.resolve(expression.value)

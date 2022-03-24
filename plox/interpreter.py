@@ -113,10 +113,11 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             self.execute(statement.body)
 
     def visit_var_stmt(self, statement: stmt.Var) -> None:
-        value = None
-        if statement.initializer:
-            value = self.evaluate(statement.initializer)
-        self.env.define(statement.name.lexeme, value)
+        for name, initializer in statement.variables.items():
+            value = None
+            if initializer is not None:
+                value = self.evaluate(initializer)
+            self.env.define(name.lexeme, value)
 
     def visit_assign_expr(self, expression: expr.Assign) -> object:
         value = self.evaluate(expression.value)

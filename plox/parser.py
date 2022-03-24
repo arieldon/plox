@@ -46,7 +46,7 @@ class Parser:
     class_declaration    -> "class" IDENTIFIER ( "<" IDENTIFIER )?
                             "{" function* "}" ;
     function_declaration -> "fun" function ;
-    var_declaration      -> "var" IDENTIFIER ( "=" expression )? ";" ;
+    var_declaration      -> "var" var ( "," var)* ";" ;
 
     statement -> expression_statement
               |  for_statement
@@ -99,6 +99,7 @@ class Parser:
     function   -> IDENTIFIER "(" parameters? ")" block ;
     parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
     arguments  -> expression ( "," expression )* ;
+    var        -> IDENTIFIER ( "=" logical_or )? ;
     """
 
     def __init__(self, tokens: list[Token]) -> None:
@@ -175,15 +176,25 @@ class Parser:
         return stmt.Function(name, parameters, body)
 
     def var_declaration(self) -> stmt.Stmt:
-        name = self.consume(TokenType.IDENTIFIER, "expect variable name")
+        variables: dict[Token, expr.Expr] = {}
 
-        if self.match(TokenType.EQUAL):
-            initializer = self.expression()
-        else:
-            initializer = None
+        while True:
+            name = self.consume(TokenType.IDENTIFIER, "expect variable name")
+            if self.match(TokenType.EQUAL):
+                initializer = self.logical_or()
+            else:
+                initializer = None
+
+            if name.lexeme not in map(lambda name: name.lexeme, variables):
+                variables[name] = initializer
+            else:
+                self.error(name, "reuse of same variable in declaration")
+
+            if not self.match(TokenType.COMMA):
+                break
 
         self.consume(TokenType.SEMICOLON, "expect ';' after variable declaration")
-        return stmt.Var(name, initializer)
+        return stmt.Var(variables)
 
     def statement(self) -> stmt.Stmt:
         if self.match(TokenType.FOR):
