@@ -60,6 +60,9 @@ class Visitor(ABC, Generic[R]):
     def visit_comma_expr(self, expr: Comma) -> R:
         raise NotImplementedError
 
+    def visit_conditional_expr(self, expr: Conditional) -> R:
+        raise NotImplementedError
+
 
 class Expr(ABC):
     @abstractmethod
@@ -182,3 +185,13 @@ class Comma(Expr):
 
     def accept(self, visitor: Visitor[R]) -> R:
         return visitor.visit_comma_expr(self)
+
+
+class Conditional(Expr):
+    def __init__(self, condition: Expr, then_expression: Expr, else_expression: Expr) -> None:
+        self.condition = condition
+        self.then_expression = then_expression
+        self.else_expression = else_expression
+
+    def accept(self, visitor: Visitor[R]) -> R:
+        return visitor.visit_conditional_expr(self)

@@ -14,6 +14,8 @@ class TokenType(IntEnum):
     SEMICOLON = auto()
     SLASH = auto()
     STAR = auto()
+    QMARK = auto()
+    COLON = auto()
 
     BANG = auto()
     BANG_EQUAL = auto()

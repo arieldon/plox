@@ -70,20 +70,21 @@ class Parser:
 
     expression -> comma
 
-    comma      -> assignment ( "," assignment )* ;
-    assignment -> ( call "." )? IDENTIFIER "=" assignment
-               |  logic_or ;
-    logic_or   -> logic_and ( "or" logic_and )* ;
-    logic_and  -> equality ( "and" equality )* ;
-    equality   -> comparison ( ( "!=" | "==" ) comparison )* ;
-    comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    term       -> factor ( ( "/" | "*" ) unary )* ;
-    factor     -> unary ( ( "/" | "*" ) unary )* ;
-    unary      -> ( "!" | "-" ) unary | call ;
-    call       -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
-    primary    -> "true" | "false" | "nil" | "this"
-               |  NUMBER | STRING | IDENTIFIER | "(" expression ")"
-               |  "super" "." IDENTIFIER ;
+    comma       -> conditional ( "," conditional )* ;
+    conditional -> logical_or "?" expression ":" conditional ;
+    assignment  -> ( call "." )? IDENTIFIER "=" assignment
+                |  logical_or ;
+    logical_or  -> logical_and ( "or" logical_and )* ;
+    logical_and -> equality ( "and" equality )* ;
+    equality    -> comparison ( ( "!=" | "==" ) comparison )* ;
+    comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    term        -> factor ( ( "/" | "*" ) unary )* ;
+    factor      -> unary ( ( "/" | "*" ) unary )* ;
+    unary       -> ( "!" | "-" ) unary | call ;
+    call        -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
+    primary     -> "true" | "false" | "nil" | "this"
+                |  NUMBER | STRING | IDENTIFIER | "(" expression ")"
+                |  "super" "." IDENTIFIER ;
 
     Lexemes are defined in Scanner instead of Parser.
 
@@ -99,7 +100,7 @@ class Parser:
     function   -> IDENTIFIER "(" parameters? ")" block ;
     parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
     arguments  -> expression ( "," expression )* ;
-    var        -> IDENTIFIER ( "=" logical_or )? ;
+    var        -> IDENTIFIER ( "=" conditional )? ;
     """
 
     def __init__(self, tokens: list[Token]) -> None:
@@ -181,7 +182,7 @@ class Parser:
         while True:
             name = self.consume(TokenType.IDENTIFIER, "expect variable name")
             if self.match(TokenType.EQUAL):
-                initializer = self.logical_or()
+                initializer = self.conditional()
             else:
                 initializer = None
 
@@ -297,10 +298,19 @@ class Parser:
         return self.comma()
 
     def comma(self) -> expr.Expr:
-        expression = self.assignment()
+        expression = self.conditional()
         while self.match(TokenType.COMMA):
-            right = self.assignment()
+            right = self.conditional()
             expression = expr.Comma(expression, right)
+        return expression
+
+    def conditional(self) -> expr.Expr:
+        expression = self.logical_or()
+        if self.match(TokenType.QMARK):
+            then_expression = self.expression()
+            self.consume(TokenType.COLON, "expect ':' after first expression")
+            else_expression = self.conditional()
+            expression = expr.Conditional(expression, then_expression, else_expression)
         return expression
 
     def assignment(self) -> expr.Expr:

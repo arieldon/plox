@@ -259,6 +259,12 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         self.evaluate(expression.left)
         return self.evaluate(expression.right)
 
+    def visit_conditional_expr(self, expression: expr.Conditional) -> object:
+        if self.is_truthy(self.evaluate(expression.condition)):
+            return self.evaluate(expression.then_expression)
+        else:
+            return self.evaluate(expression.else_expression)
+
     def look_up_variable(self, name: tokens.Token, expression: expr.Expr) -> object:
         if (distance := self.local_env.get(expression)) is not None:
             return self.env.get_at(distance, name.lexeme)

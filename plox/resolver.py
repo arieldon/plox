@@ -208,3 +208,8 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
     def visit_comma_expr(self, expression: expr.Comma) -> None:
         self.resolve(expression.left)
         self.resolve(expression.right)
+
+    def visit_conditional_expr(self, expression: expr.Conditional) -> None:
+        self.resolve(expression.condition)
+        self.resolve(expression.then_expression)
+        self.resolve(expression.else_expression)
