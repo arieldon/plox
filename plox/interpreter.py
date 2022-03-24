@@ -1,13 +1,21 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from enum import IntFlag, unique
+import operator
 from time import time
-from typing import Any
+from typing import Any, Callable
 
 import environment
 import expr
 import lox
 import stmt
 import tokens
+
+
+@unique
+class OperandType(IntFlag):
+    NUMBER = 1
+    STRING = 2
 
 
 class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
@@ -129,50 +137,31 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
 
         return value
 
-    def visit_binary_expr(self, expression: expr.Binary) -> None | str | float:
-        left = self.evaluate(expression.left)
-        right = self.evaluate(expression.right)
-
+    def visit_binary_expr(self, expression: expr.Binary) -> object:
         match expression.operator.token_type:
             case tokens.TokenType.GREATER:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) > float(right)
+                return self.perform_operation(operator.gt, expression)
             case tokens.TokenType.GREATER_EQUAL:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) >= float(right)
+                return self.perform_operation(operator.ge, expression)
             case tokens.TokenType.LESSER:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) < float(right)
+                return self.perform_operation(operator.lt, expression)
             case tokens.TokenType.LESSER_EQUAL:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) <= float(right)
+                return self.perform_operation(operator.lt, expression)
             case tokens.TokenType.BANG_EQUAL:
-                return not self.is_equal(left, right)
+                return self.perform_operation(operator.ne, expression)
             case tokens.TokenType.EQUAL_EQUAL:
-                return self.is_equal(left, right)
+                return self.perform_operation(operator.eq, expression)
             case tokens.TokenType.MINUS:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) - float(right)
+                return self.perform_operation(operator.sub, expression, OperandType.NUMBER)
             case tokens.TokenType.SLASH:
-                self.check_number_operands(expression.operator, left, right)
-                if right == 0:
+                try:
+                    return self.perform_operation(operator.truediv, expression, OperandType.NUMBER)
+                except ZeroDivisionError:
                     raise LoxRuntimeError(expression.operator, "cannot divide by zero")
-                return float(left) / float(right)
             case tokens.TokenType.STAR:
-                self.check_number_operands(expression.operator, left, right)
-                return float(left) * float(right)
-            case tokens.TokenType.PLUS if isinstance(left, float) and isinstance(right, float):
-                return float(left) + float(right)
-            case tokens.TokenType.PLUS if isinstance(left, str) and isinstance(right, str):
-                return str(left) + str(right)
+                return self.perform_operation(operator.mul, expression, OperandType.NUMBER)
             case tokens.TokenType.PLUS:
-                # Catch any case for PLUS where operators are not either both
-                # numbers or both strings.
-                raise LoxRuntimeError(
-                    expression.operator, "operands must be two numbers or two strings"
-                )
-
-        # Unreachable
+                return self.perform_operation(operator.add, expression)
         assert False, "This statement should not be reached."
         return None
 
@@ -243,8 +232,9 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
 
         match expression.operator.token_type:
             case tokens.TokenType.MINUS:
-                self.check_number_operand(expression.operator, right)
-                return -float(right)
+                if isinstance(right, float):
+                    return -float(right)
+                raise LoxRuntimeError(expression.operator, "operand must be a number")
             case tokens.TokenType.BANG:
                 return not self.is_truthy(right)
 
@@ -269,18 +259,6 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         if (distance := self.local_env.get(expression)) is not None:
             return self.env.get_at(distance, name.lexeme)
         return self.global_env.get(name)
-
-    def check_number_operand(self, operator: tokens.Token, operand: object) -> None:
-        if isinstance(operand, float):
-            return
-        raise LoxRuntimeError(operator, "operand must be a number")
-
-    def check_number_operands(
-        self, operator: tokens.Token, left: object, right: object
-    ) -> None:
-        if isinstance(left, float) and isinstance(right, float):
-            return
-        raise LoxRuntimeError(operator, "operands must be a number")
 
     def is_truthy(self, item: object) -> bool:
         if not item:
@@ -307,6 +285,31 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             return text
 
         return str(item)
+
+    def perform_operation(
+        self,
+        operator: Callable[[str | float, str | float], str | float],
+        expression: expr.Binary,
+        operand_type: OperandType = OperandType.NUMBER | OperandType.STRING,
+    ) -> str | float:
+        assert operand_type != 0, "`operator` must some type of variable"
+
+        l = self.evaluate(expression.left)
+        r = self.evaluate(expression.right)
+
+        if OperandType.NUMBER in operand_type and isinstance(l, float) and isinstance(r, float):
+            return operator(float(l), float(r))
+        elif OperandType.STRING in operand_type and isinstance(l, str) and isinstance(r, str):
+            return operator(str(l), str(r))
+
+        # This logic only works if there are no more than two types in OperandType.
+        if OperandType.NUMBER in operand_type and OperandType.STRING in operand_type:
+            errmsg = "operands must be either both numbers or both strings"
+        elif OperandType.STRING not in operand_type:
+            errmsg = "operands must both be numbers"
+        elif OperandType.NUMBER not in operand_type:
+            errmsg = "operands must both be strings"
+        raise LoxRuntimeError(expression.operator, errmsg)
 
 
 class LoxRuntimeError(RuntimeError):
