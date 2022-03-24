@@ -54,7 +54,7 @@ class Stmt(ABC):
 
 
 class Block(Stmt):
-    def __init__(self, statements: list[None | Stmt]) -> None:
+    def __init__(self, statements: list[Stmt]) -> None:
         self.statements = statements
 
     def accept(self, visitor: Visitor[R]) -> R:
@@ -62,7 +62,9 @@ class Block(Stmt):
 
 
 class Class(Stmt):
-    def __init__(self, name: tokens.Token, superclass: expr.Variable, methods: list[Function]) -> None:
+    def __init__(
+        self, name: tokens.Token, superclass: expr.Variable, methods: list[Function]
+    ) -> None:
         self.name = name
         self.superclass = superclass
         self.methods = methods
@@ -79,7 +81,9 @@ class Expression(Stmt):
 
 
 class Function(Stmt):
-    def __init__(self, name: tokens.Token, params: list[tokens.Token], body: list[None | Stmt]) -> None:
+    def __init__(
+        self, name: tokens.Token, params: list[tokens.Token], body: list[Stmt]
+    ) -> None:
         self.name = name
         self.params = params
         self.body = body
@@ -89,9 +93,7 @@ class Function(Stmt):
 
 
 class If(Stmt):
-    def __init__(
-        self, condition: expr.Expr, then_branch: Stmt, else_branch: None | Stmt
-    ) -> None:
+    def __init__( self, condition: expr.Expr, then_branch: Stmt, else_branch: Stmt) -> None:
         self.condition = condition
         self.then_branch = then_branch
         self.else_branch = else_branch
@@ -109,7 +111,7 @@ class Print(Stmt):
 
 
 class Return(Stmt):
-    def __init__(self, keyword: tokens.Token, value: None | expr.Expr) -> None:
+    def __init__(self, keyword: tokens.Token, value: expr.Expr) -> None:
         self.keyword = keyword
         self.value = value
 
@@ -127,7 +129,7 @@ class While(Stmt):
 
 
 class Var(Stmt):
-    def __init__(self, name: tokens.Token, initializer: None | expr.Expr) -> None:
+    def __init__(self, name: tokens.Token, initializer: expr.Expr) -> None:
         self.name = name
         self.initializer = initializer
 

@@ -56,7 +56,9 @@ class Scanner:
             case "<":
                 self.add_token(TokenType.LESSER_EQUAL if self.match("=") else TokenType.LESSER)
             case ">":
-                self.add_token(TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER)
+                self.add_token(
+                    TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER
+                )
             case "/":
                 if self.match("/"):
                     # Skip single-line comments.

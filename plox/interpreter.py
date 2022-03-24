@@ -76,7 +76,9 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
 
         methods = {}
         for method in statement.methods:
-            methods[method.name.lexeme] = LoxFunction(method, self.env, method.name.lexeme == "init")
+            methods[method.name.lexeme] = LoxFunction(
+                method, self.env, method.name.lexeme == "init"
+            )
 
         cls = LoxClass(statement.name.lexeme, superclass, methods)
         if statement.superclass is not None:
@@ -224,7 +226,9 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         superclass = self.env.get_at(distance, "super")
         item = self.env.get_at(distance - 1, "this")
         if (method := superclass.find_method(expression.method.lexeme)) is None:
-            raise LoxRuntimeError(expression.method, f"undefined property '{expression.method.lexeme}'")
+            raise LoxRuntimeError(
+                expression.method, f"undefined property '{expression.method.lexeme}'"
+            )
         return method.bind(item)
 
     def visit_this_expr(self, expression: expr.This) -> object:
@@ -318,7 +322,12 @@ class LoxCallable(ABC):
 
 
 class LoxFunction(LoxCallable):
-    def __init__(self, declaration: stmt.Function, closure: environment.Environment, is_initializer: bool) -> None:
+    def __init__(
+        self,
+        declaration: stmt.Function,
+        closure: environment.Environment,
+        is_initializer: bool,
+    ) -> None:
         self.declaration = declaration
         self.closure = closure
         self.is_initializer = is_initializer
@@ -353,7 +362,9 @@ class LoxFunction(LoxCallable):
 
 
 class LoxClass(LoxCallable):
-    def __init__(self, name: str, superclass: LoxClass, methods: dict[str, LoxFunction]) -> None:
+    def __init__(
+        self, name: str, superclass: LoxClass, methods: dict[str, LoxFunction]
+    ) -> None:
         self.name = name
         self.superclass = superclass
         self.methods = methods
