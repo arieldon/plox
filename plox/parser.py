@@ -68,8 +68,9 @@ class Parser:
     while_statement      -> "while" "(" expression ")" statement ;
     block                -> "{" declaration "}" ;
 
-    expression -> assignment
+    expression -> comma
 
+    comma      -> assignment ( "," assignment )* ;
     assignment -> ( call "." )? IDENTIFIER "=" assignment
                |  logic_or ;
     logic_or   -> logic_and ( "or" logic_and )* ;
@@ -282,7 +283,14 @@ class Parser:
         return statements
 
     def expression(self) -> expr.Expr:
-        return self.assignment()
+        return self.comma()
+
+    def comma(self) -> expr.Expr:
+        expression = self.assignment()
+        while self.match(TokenType.COMMA):
+            right = self.assignment()
+            expression = expr.Comma(expression, right)
+        return expression
 
     def assignment(self) -> expr.Expr:
         expression = self.logical_or()

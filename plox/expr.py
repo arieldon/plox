@@ -57,6 +57,9 @@ class Visitor(ABC, Generic[R]):
     def visit_variable_expr(self, expr: Variable) -> R:
         raise NotImplementedError
 
+    def visit_comma_expr(self, expr: Comma) -> R:
+        raise NotImplementedError
+
 
 class Expr(ABC):
     @abstractmethod
@@ -170,3 +173,12 @@ class Variable(Expr):
 
     def accept(self, visitor: Visitor[R]) -> R:
         return visitor.visit_variable_expr(self)
+
+
+class Comma(Expr):
+    def __init__(self, left: Expr, right: Expr) -> None:
+        self.left = left
+        self.right = right
+
+    def accept(self, visitor: Visitor[R]) -> R:
+        return visitor.visit_comma_expr(self)

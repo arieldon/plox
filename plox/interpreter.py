@@ -250,6 +250,10 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
     def visit_variable_expr(self, expression: expr.Variable) -> object:
         return self.look_up_variable(expression.name, expression)
 
+    def visit_comma_expr(self, expression: expr.Comma) -> object:
+        self.evaluate(expression.left)
+        return self.evaluate(expression.right)
+
     def look_up_variable(self, name: tokens.Token, expression: expr.Expr) -> object:
         if (distance := self.local_env.get(expression)) is not None:
             return self.env.get_at(distance, name.lexeme)

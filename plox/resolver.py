@@ -203,3 +203,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         if len(self.scopes) and self.scopes[-1].get(expression.name.lexeme) is False:
             lox.error(expression.name, "cannot read local variable in its own initializer")
         self.resolve_local(expression, expression.name)
+
+    def visit_comma_expr(self, expression: expr.Comma) -> None:
+        self.resolve(expression.left)
+        self.resolve(expression.right)
