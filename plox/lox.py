@@ -1,4 +1,5 @@
 from __future__ import annotations
+import readline
 import sys
 
 from interpreter import Interpreter
