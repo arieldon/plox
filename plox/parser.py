@@ -71,7 +71,7 @@ class Parser:
     expression -> comma
 
     comma       -> conditional ( "," conditional )* ;
-    conditional -> logical_or "?" expression ":" conditional ;
+    conditional -> assignment "?" expression ":" conditional ;
     assignment  -> ( call "." )? IDENTIFIER "=" assignment
                 |  logical_or ;
     logical_or  -> logical_and ( "or" logical_and )* ;
@@ -306,9 +306,9 @@ class Parser:
         return expression
 
     def conditional(self) -> expr.Expr:
-        expression = self.logical_or()
+        expression = self.assignment()
         if self.match(TokenType.QMARK):
-            then_expression = self.expression()
+            then_expression = self.logical_or()
             self.consume(TokenType.COLON, "expect ':' after first expression")
             else_expression = self.conditional()
             expression = expr.Conditional(expression, then_expression, else_expression)
