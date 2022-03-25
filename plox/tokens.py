@@ -67,3 +67,8 @@ class Token:
         if self.literal:
             return f"(LINE {self.line}, {self.token_type.name}) {self.lexeme} {self.literal}"
         return f"(LINE {self.line}, {self.token_type.name}) {self.lexeme}"
+
+    def __repr__(self) -> str:
+        if self.literal:
+            return f"TOKEN {self.token_type.name} ({self.lexeme})"
+        return f"TOKEN {self.token_type.name}"
