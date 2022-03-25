@@ -3,6 +3,32 @@ from tokens import Token, TokenType
 
 
 class Scanner:
+    """A scanner for Lox that reads source code and outputs tokens.
+
+    Parameters
+    ----------
+    source : str
+        Source code from a file or the REPL
+
+    Attributes
+    ----------
+    source : str
+        Source code from a file or a REPL entry
+    tokens : list[Token]
+        Sequence of tokens produced from source
+    start : int
+        Beginning of current token being scanned
+    current : int
+        Current position in source
+    line : int
+        Current line of source based on number of '\n' read
+
+    Methods
+    -------
+    scan_tokens()
+        Tokenize source code given to Scanner
+    """
+
     keywords = {
         "and": TokenType.AND,
         "break": TokenType.BREAK,

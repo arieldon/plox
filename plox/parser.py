@@ -11,11 +11,16 @@ class Parser:
 
     Generate an abstract syntax tree (AST) given a sequence of tokens.
 
+    Parameters
+    ----------
+    tokens : list[Token]
+        Sequence of tokens passed from scanner
+
     Attributes
     ----------
     tokens : list[Token]
         Sequence of tokens passed from Scanner
-    current: int
+    current : int
         Index of current token being parsed in sequence of tokens
 
     Methods
@@ -106,12 +111,6 @@ class Parser:
     """
 
     def __init__(self, tokens: list[Token]) -> None:
-        """
-        Parameters
-        ----------
-        tokens: list[Token]
-            Sequence of tokens passed from scanner
-        """
         self.tokens = tokens
         self.current = 0
 
