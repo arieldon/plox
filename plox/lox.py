@@ -47,13 +47,12 @@ def run_prompt() -> None:
             return
 
         if multiline:
-            run(multiline)
-        else:
-            run(line)
+            line = multiline
+        run(line, repl=True)
         had_error = False
 
 
-def run(source: str) -> None:
+def run(source: str, repl: bool = False) -> None:
     scanner = Scanner(source)
     tokens = scanner.scan_tokens()
     parser = Parser(tokens)
@@ -66,7 +65,7 @@ def run(source: str) -> None:
     if had_error:
         return
 
-    interpreter.interpret(statements)
+    interpreter.interpret(statements, repl)
 
 
 def error(item: int | Token, message: str) -> None:

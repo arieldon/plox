@@ -37,10 +37,13 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             )(),
         )
 
-    def interpret(self, statements: list[stmt.Stmt]) -> None:
+    def interpret(self, statements: list[stmt.Stmt], repl: bool) -> None:
         try:
             for statement in statements:
-                self.execute(statement)
+                if repl and isinstance(statement, stmt.Expression):
+                    print(self.stringify(self.evaluate(statement.expression)))
+                else:
+                    self.execute(statement)
         except LoxRuntimeError as error:
             lox.runtime_error(error)
 

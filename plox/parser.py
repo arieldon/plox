@@ -56,7 +56,7 @@ class Parser:
               |  while_statement
               |  block ;
 
-    expression_statement -> expression ";" ;
+    expression_statement -> expression ";"? ;
     for_statement        -> "for" "("
                             ( var_declaration | expression_statement | ";" )
                             expression? ";"
@@ -214,7 +214,8 @@ class Parser:
 
     def expression_statement(self) -> stmt.Stmt:
         expression = self.expression()
-        self.consume(TokenType.SEMICOLON, "expect ';' after value")
+        # The semicolon is optional. Consume it if it exists, or simply continue.
+        self.match(TokenType.SEMICOLON)
         return stmt.Expression(expression)
 
     def for_statement(self) -> stmt.Stmt:
