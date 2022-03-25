@@ -119,9 +119,15 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             value = self.evaluate(statement.value)
         raise Return(value)
 
+    def visit_break_stmt(self, stmt: stmt.Break) -> None:
+        raise Break()
+
     def visit_while_stmt(self, statement: stmt.While) -> None:
         while self.is_truthy(self.evaluate(statement.condition)):
-            self.execute(statement.body)
+            try:
+                self.execute(statement.body)
+            except Break:
+                return
 
     def visit_var_stmt(self, statement: stmt.Var) -> None:
         for name, initializer in statement.variables.items():
@@ -427,3 +433,7 @@ class LoxInstance:
 class Return(RuntimeError):
     def __init__(self, value: object) -> None:
         self.value = value
+
+
+class Break(RuntimeError):
+    pass

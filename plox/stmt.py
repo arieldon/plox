@@ -39,6 +39,10 @@ class Visitor(ABC, Generic[R]):
         raise NotImplementedError
 
     @abstractmethod
+    def visit_break_stmt(self, stmt: Break) -> R:
+        raise NotImplementedError
+
+    @abstractmethod
     def visit_while_stmt(self, stmt: While) -> R:
         raise NotImplementedError
 
@@ -117,6 +121,14 @@ class Return(Stmt):
 
     def accept(self, visitor: Visitor[R]) -> R:
         return visitor.visit_return_stmt(self)
+
+
+class Break(Stmt):
+    def __init__(self, keyword: tokens.Token) -> None:
+        self.keyword = keyword
+
+    def accept(self, visitor: Visitor[R]) -> R:
+        return visitor.visit_break_stmt(self)
 
 
 class While(Stmt):

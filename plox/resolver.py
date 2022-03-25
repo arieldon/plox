@@ -27,6 +27,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         self.scopes: list[dict[str, bool]] = []
         self.current_function = FunctionType.NONE
         self.current_class = ClassType.NONE
+        self.in_loop = False
 
     def resolve(self, item: list[stmt.Stmt] | stmt.Stmt | expr.Expr) -> None:
         if isinstance(item, list):
@@ -138,9 +139,16 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
                 lox.error(statement.keyword, "cannot return a value from an initializer")
             self.resolve(statement.value)
 
+    def visit_break_stmt(self, statement: stmt.Break) -> None:
+        if not self.in_loop:
+            lox.error(statement.keyword, "cannot break from a loop outside of a loop")
+        return
+
     def visit_while_stmt(self, statement: stmt.While) -> None:
+        self.in_loop = True
         self.resolve(statement.condition)
         self.resolve(statement.body)
+        self.in_loop = False
 
     def visit_function_stmt(self, statement: stmt.Function) -> None:
         self.declare(statement.name)

@@ -53,6 +53,7 @@ class Parser:
               |  if_statement
               |  print_statement
               |  return_statement
+              |  break_statement
               |  while_statement
               |  block ;
 
@@ -65,6 +66,7 @@ class Parser:
                             ( "else" statement )? ;
     print_statement      -> "print" expression ";" ;
     return_statement     -> "return" expression ";" ;
+    break_statement      -> "break" ";" ;
     while_statement      -> "while" "(" expression ")" statement ;
     block                -> "{" declaration "}" ;
 
@@ -206,6 +208,8 @@ class Parser:
             return self.print_statement()
         if self.match(TokenType.RETURN):
             return self.return_statement()
+        if self.match(TokenType.BREAK):
+            return self.break_statement()
         if self.match(TokenType.WHILE):
             return self.while_statement()
         if self.match(TokenType.LEFT_BRACE):
@@ -279,6 +283,11 @@ class Parser:
 
         self.consume(TokenType.SEMICOLON, "expect ';' after return value")
         return stmt.Return(keyword, value)
+
+    def break_statement(self) -> stmt.Stmt:
+        keyword = self.previous()
+        self.consume(TokenType.SEMICOLON, "expect ';' after break statement")
+        return stmt.Break(keyword)
 
     def while_statement(self) -> stmt.Stmt:
         self.consume(TokenType.LEFT_PAREN, "expect '(' after 'while'")
