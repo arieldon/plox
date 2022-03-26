@@ -9,6 +9,7 @@ import tokens
 
 
 class FunctionType(IntEnum):
+    """Specify function type in Resolver."""
     NONE = auto()
     FUNCTION = auto()
     INITIALIZER = auto()
@@ -16,20 +17,78 @@ class FunctionType(IntEnum):
 
 
 class ClassType(IntEnum):
+    """Specify class type in Resolver."""
     NONE = auto()
     CLASS = auto()
     SUBCLASS = auto()
 
 
 class Resolver(expr.Visitor[None], stmt.Visitor[None]):
+    """A resolver that manages scope and performs semantic analysis.
+
+    Lox uses lexical or static scope: a variable usage refers to the
+    declaration directly before it with the same name within the
+    innermost scope, and a variable always resolves to the same
+    declaration.
+
+    Consequently, it's possible to resolve each variable once instead of
+    allowing the Interpreter to resolve a variable dynamically for each
+    use.
+
+    All in all, the resolver locates the declaration to which a variable
+    refers. It produces no side effects, and it does not follow control
+    flow. All loops and conditional branches are resolved once.
+    Likewise, logical operators are not short-circuited.
+
+    Parameters
+    ----------
+    interpreter : Interpreter
+        An instance of Interpreter
+
+    Arguments
+    ---------
+    interpreter : Interpreter
+        An instance of Interpreter
+    scopes : list[dict[str, bool]]
+        Stack of scopes, where keys of each scope represent variables
+        and their corresponding boolean values represent declaration and
+        definition. `False` indicates a declared but undefined variable;
+        `True` indicates a declared and defined variable ready for use.
+        As index of scope increases, its nesting increases as well; that
+        is, the last entry in the list represents the innermost scope.
+    current_function : FunctionType
+        Specify current function scope
+    current_class : ClassType
+        Specify current class scope
+    loop_status : bool
+        Indicate current scope exists directly within a loop
+
+    Methods
+    -------
+    resolve() : None
+        Resolve variables for given statements
+
+    Notes
+    -----
+    Declaration and definition are necessary to bind a variable to a
+    scope.
+
+    Declaration and definition -- methods declare() and define(),
+    respectively -- are split into two separate procedures to prevent
+    the reference of a variable in its own initialization. Declaration
+    binds the variable to the innermost scope. Definition then indicates
+    the variable expression has been resolved.
+    """
+
     def __init__(self, interpreter: Interpreter) -> None:
         self.interpreter = interpreter
         self.scopes: list[dict[str, bool]] = []
         self.current_function = FunctionType.NONE
         self.current_class = ClassType.NONE
-        self.in_loop = False
+        self.loop_status = False
 
     def resolve(self, item: list[stmt.Stmt] | stmt.Stmt | expr.Expr) -> None:
+        """Resolve variables for given statements."""
         if isinstance(item, list):
             statements = item
             for statement in statements:
@@ -40,6 +99,11 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
             raise TypeError
 
     def resolve_function(self, function: stmt.Function, function_type: FunctionType) -> None:
+        """Create and resolve scope for function declaration.
+
+        A function declaration pushes a new scope onto the stack for its
+        body and binds its parameters to this scope.
+        """
         enclosing_function = self.current_function
         self.current_function = function_type
 
@@ -53,23 +117,32 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         self.current_function = enclosing_function
 
     def resolve_local(self, expression: expr.Expr, name: tokens.Token) -> None:
+        """Resolve the use of a local variable.
+
+        Begin at innermost scope and progress outward, checking each
+        scope for the variable name. If found, pass number of scopes
+        from that of the use of the variable to the interpreter. If not
+        found, assume the variable is global.
+        """
         for i in range(len(self.scopes) - 1, -1, -1):
             if name.lexeme in self.scopes[i]:
                 self.interpreter.resolve(expression, len(self.scopes) - 1 - i)
                 return
 
-        # for i, scope in enumerate(self.scopes[::-1], start=1):
-        #     if name.lexeme in scope:
-        #         self.interpreter.resolve(expression, i)
-        #         return
-
     def begin_scope(self) -> None:
+        """Create and push new scope onto stack of scopes."""
         self.scopes.append({})
 
     def end_scope(self) -> None:
+        """Remove a used scope from stack of scopes."""
         self.scopes.pop()
 
     def declare(self, name: tokens.Token) -> None:
+        """Add variable to innermost scope.
+
+        Mark variable as declared but undefined with `False` -- it is
+        not ready for use.
+        """
         if len(self.scopes) == 0:
             return
         scope = self.scopes[-1]
@@ -78,11 +151,19 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         scope[name.lexeme] = False
 
     def define(self, name: tokens.Token) -> None:
+        """Indicate a variable is declared, defined, and ready for use.
+
+        Prior to indicating a variable is defined and thus ready for
+        use, resolve its initializer expression.
+
+        `True` indicates a variable is available for use.
+        """
         if len(self.scopes) == 0:
             return
         self.scopes[-1][name.lexeme] = True
 
     def visit_block_stmt(self, statement: stmt.Block) -> None:
+        """Create and resolve new scope for statements within block."""
         self.begin_scope()
         self.resolve(statement.statements)
         self.end_scope()
@@ -140,15 +221,15 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
             self.resolve(statement.value)
 
     def visit_break_stmt(self, statement: stmt.Break) -> None:
-        if not self.in_loop:
+        if not self.loop_status:
             lox.error(statement.keyword, "cannot break from a loop outside of a loop")
         return
 
     def visit_while_stmt(self, statement: stmt.While) -> None:
-        self.in_loop = True
+        self.loop_status = True
         self.resolve(statement.condition)
         self.resolve(statement.body)
-        self.in_loop = False
+        self.loop_status = False
 
     def visit_function_stmt(self, statement: stmt.Function) -> None:
         self.declare(statement.name)

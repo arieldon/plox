@@ -60,6 +60,7 @@ def run(source: str, repl: bool = False) -> None:
     if had_error:
         return
 
+    # Resolve variables in a separate pass.
     resolver = Resolver(interpreter)
     resolver.resolve(statements)
     if had_error:
