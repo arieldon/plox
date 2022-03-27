@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from enum import auto, IntEnum, unique
 
 import expr
@@ -6,6 +7,14 @@ from interpreter import Interpreter
 import lox
 import stmt
 import tokens
+
+
+@dataclass
+class LocalVariableState:
+    """Store state when resolving local variables."""
+    ready: bool = False
+    used: bool = False
+    line_number: int = 0
 
 
 class FunctionType(IntEnum):
@@ -35,9 +44,9 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
     allowing the Interpreter to resolve a variable dynamically for each
     use.
 
-    All in all, the resolver locates the declaration to which a variable
-    refers. It produces no side effects, and it does not follow control
-    flow. All loops and conditional branches are resolved once.
+    All in all, the resolver locates the declaration to which a local
+    variable refers. It produces no side effects, and it does not follow
+    control flow. All loops and conditional branches are resolved once.
     Likewise, logical operators are not short-circuited.
 
     Parameters
@@ -49,13 +58,12 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
     ---------
     interpreter : Interpreter
         An instance of Interpreter
-    scopes : list[dict[str, bool]]
+    scopes : list[dict[str, LocalVariableState]]
         Stack of scopes, where keys of each scope represent variables
-        and their corresponding boolean values represent declaration and
-        definition. `False` indicates a declared but undefined variable;
-        `True` indicates a declared and defined variable ready for use.
-        As index of scope increases, its nesting increases as well; that
-        is, the last entry in the list represents the innermost scope.
+        and their corresponding values represent the state of resolution
+        of the local variable. As index of list increases, nesting of
+        scope increases as well; that is, the last entry in the list
+        represents the innermost scope.
     current_function : FunctionType
         Specify current function scope
     current_class : ClassType
@@ -82,7 +90,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
 
     def __init__(self, interpreter: Interpreter) -> None:
         self.interpreter = interpreter
-        self.scopes: list[dict[str, bool]] = []
+        self.scopes: list[dict[str, LocalVariableState]] = []
         self.current_function = FunctionType.NONE
         self.current_class = ClassType.NONE
         self.loop_status = False
@@ -126,6 +134,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         """
         for i in range(len(self.scopes) - 1, -1, -1):
             if name.lexeme in self.scopes[i]:
+                self.scopes[i][name.lexeme].used = True
                 self.interpreter.resolve(expression, len(self.scopes) - 1 - i)
                 return
 
@@ -135,7 +144,10 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
 
     def end_scope(self) -> None:
         """Remove a used scope from stack of scopes."""
-        self.scopes.pop()
+        scope = self.scopes.pop()
+        for name, variable_state in scope.items():
+            if variable_state.used is False:
+                lox.error(variable_state.line_number, f"local variable '{name}' was not used")
 
     def declare(self, name: tokens.Token) -> None:
         """Add variable to innermost scope.
@@ -148,7 +160,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         scope = self.scopes[-1]
         if name.lexeme in scope:
             lox.error(name, "a variable with this name already exists in this scope")
-        scope[name.lexeme] = False
+        scope[name.lexeme] = LocalVariableState(line_number=name.line)
 
     def define(self, name: tokens.Token) -> None:
         """Indicate a variable is declared, defined, and ready for use.
@@ -160,7 +172,7 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         """
         if len(self.scopes) == 0:
             return
-        self.scopes[-1][name.lexeme] = True
+        self.scopes[-1][name.lexeme].ready = True
 
     def visit_block_stmt(self, statement: stmt.Block) -> None:
         """Create and resolve new scope for statements within block."""
@@ -182,10 +194,13 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
             self.resolve(statement.superclass)
 
             self.begin_scope()
-            self.scopes[-1]["super"] = True
+            # A line number is not provided because `super` is declared and defined automatically.
+            self.scopes[-1]["super"] = LocalVariableState(ready=True, used=True)
 
         self.begin_scope()
-        self.scopes[-1]["this"] = True
+        # As with `super`, a line number is not provided for `this` since it is
+        # declared and defined automatically.
+        self.scopes[-1]["this"] = LocalVariableState(ready=True, used=True)
 
         for method in statement.methods:
             if method.name.lexeme == "init":
@@ -290,8 +305,12 @@ class Resolver(expr.Visitor[None], stmt.Visitor[None]):
         self.resolve(expression.right)
 
     def visit_variable_expr(self, expression: expr.Variable) -> None:
-        if len(self.scopes) and self.scopes[-1].get(expression.name.lexeme) is False:
-            lox.error(expression.name, "cannot read local variable in its own initializer")
+        if (
+            len(self.scopes) and
+            (variable := self.scopes[-1].get(expression.name.lexeme)) and
+            variable.ready is False
+        ):
+            lox.error(expression.name, "cannot use local variable in its own initializer")
         self.resolve_local(expression, expression.name)
 
     def visit_comma_expr(self, expression: expr.Comma) -> None:
