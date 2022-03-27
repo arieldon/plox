@@ -2,7 +2,7 @@ from __future__ import annotations
 import readline
 import sys
 
-from interpreter import Interpreter
+from interpreter import Interpreter, LoxRuntimeError
 from parser import Parser
 from resolver import Resolver
 from scanner import Scanner
@@ -10,6 +10,7 @@ from tokens import Token, TokenType
 
 
 def run_file(filepath: str) -> None:
+    """Input source from a file to Lox interpreter."""
     try:
         with open(filepath, "r") as f:
             source = f.read()
@@ -25,6 +26,7 @@ def run_file(filepath: str) -> None:
 
 
 def run_prompt() -> None:
+    """Start a REPL and input lines of source to Lox interpreter."""
     global had_error
 
     while True:
@@ -53,6 +55,14 @@ def run_prompt() -> None:
 
 
 def run(source: str, repl: bool = False) -> None:
+    """Interpret Lox source code.
+
+    1. Tokenize input.
+    2. Parse tokens into syntax trees.
+    3. Resolve declarations and definitions of local variables in
+       separate pass.
+    4. Traverse syntax trees, translate Lox to Python, and execute.
+    """
     scanner = Scanner(source)
     tokens = scanner.scan_tokens()
     parser = Parser(tokens)
@@ -60,7 +70,6 @@ def run(source: str, repl: bool = False) -> None:
     if had_error:
         return
 
-    # Resolve variables in a separate pass.
     resolver = Resolver(interpreter)
     resolver.resolve(statements)
     if had_error:
@@ -70,6 +79,7 @@ def run(source: str, repl: bool = False) -> None:
 
 
 def error(item: int | Token, message: str) -> None:
+    """Report error and its location appropriately."""
     if isinstance(item, int):
         line = item
         report(line, "", message)
@@ -81,7 +91,8 @@ def error(item: int | Token, message: str) -> None:
             report(token.line, f"at '{token.lexeme}'", message)
 
 
-def runtime_error(error: interpreter.LoxRuntimeError) -> None:
+def runtime_error(error: LoxRuntimeError) -> None:
+    """Output error message and set global runtime error variable."""
     global had_runtime_error
 
     print(error)
@@ -89,6 +100,7 @@ def runtime_error(error: interpreter.LoxRuntimeError) -> None:
 
 
 def report(line: int, where: str, message: str) -> None:
+    """Output error message and set global error variable."""
     global had_error
 
     print(f"[line {line}] error {where}: {message}", file=sys.stderr)
