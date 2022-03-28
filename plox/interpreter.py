@@ -5,10 +5,10 @@ import operator
 from time import time
 from typing import Any, Callable
 
-import expr
-import lox
-import stmt
-import tokens
+from plox import expr
+from plox import stmt
+from plox import tokens
+from plox import lox
 
 
 @unique
@@ -731,7 +731,7 @@ class Environment:
         if self.enclosing:
             return self.enclosing.get(name)
 
-        raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
+        raise LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
 
     def assign(self, name: tokens.Token, value: object) -> None:
         """Update a value in the environment.
@@ -754,4 +754,4 @@ class Environment:
         elif self.enclosing:
             self.enclosing.assign(name, value)
         else:
-            raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
+            raise LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")

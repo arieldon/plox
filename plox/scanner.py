@@ -1,5 +1,5 @@
-import lox
-from tokens import Token, TokenType
+from plox import lox
+from plox.tokens import Token, TokenType
 
 
 class Scanner:

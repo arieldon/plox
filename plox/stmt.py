@@ -2,8 +2,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-import expr
-import tokens
+from plox import expr
+from plox import tokens
 
 
 R = TypeVar("R")

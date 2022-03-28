@@ -1,6 +1,6 @@
 import sys
 
-import lox
+from plox import lox
 
 
 def main() -> None:

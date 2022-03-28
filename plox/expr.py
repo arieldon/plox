@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from tokens import Token
+from plox.tokens import Token
 
 
 R = TypeVar("R")

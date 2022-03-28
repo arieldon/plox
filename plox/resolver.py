@@ -2,11 +2,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import auto, IntEnum, unique
 
-import expr
-from interpreter import Interpreter
-import lox
-import stmt
-import tokens
+from plox import expr
+from plox import lox
+from plox import stmt
+from plox import tokens
+from plox.interpreter import Interpreter
 
 
 @dataclass

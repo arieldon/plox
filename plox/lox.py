@@ -2,11 +2,16 @@ from __future__ import annotations
 import readline
 import sys
 
-from interpreter import Interpreter, LoxRuntimeError
-from parser import Parser
-from resolver import Resolver
-from scanner import Scanner
-from tokens import Token, TokenType
+from plox.interpreter import Interpreter, LoxRuntimeError
+from plox.parser import Parser
+from plox.resolver import Resolver
+from plox.scanner import Scanner
+from plox.tokens import Token, TokenType
+
+
+had_error = False
+had_runtime_error = False
+interpreter = Interpreter()
 
 
 def run_file(filepath: str) -> None:
@@ -105,8 +110,3 @@ def report(line: int, where: str, message: str) -> None:
 
     print(f"[line {line}] error {where}: {message}", file=sys.stderr)
     had_error = True
-
-
-interpreter = Interpreter()
-had_error = False
-had_runtime_error = False

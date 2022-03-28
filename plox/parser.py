@@ -1,9 +1,9 @@
 from typing import NoReturn
 
-import expr
-import lox
-import stmt
-from tokens import Token, TokenType
+from plox import expr
+from plox import lox
+from plox import stmt
+from plox.tokens import Token, TokenType
 
 
 class Parser:
