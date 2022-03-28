@@ -414,7 +414,7 @@ class Parser:
             if self.match(TokenType.LEFT_PAREN):
                 expression = self.finish_call(expression)
             if self.match(TokenType.DOT):
-                name = self.consume(TokenType.IDENTIFIER, "expect poerty name after '.'")
+                name = self.consume(TokenType.IDENTIFIER, "expect property name after '.'")
                 expression = expr.Get(expression, name)
             else:
                 break
