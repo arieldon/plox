@@ -5,7 +5,6 @@ import operator
 from time import time
 from typing import Any, Callable
 
-import environment
 import expr
 import lox
 import stmt
@@ -24,12 +23,12 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
 
     Attributes
     ----------
-    global_env : environment.Environment
+    global_env : Environment
         Environment of variables, classes, functions declared in global
         scope
     local_env : dict[expr.Expr, int]
         Environment of variables and functions declared in a local scope
-    env : environment.Environment
+    env : Environment
         Environment of current scope
 
     Methods
@@ -38,7 +37,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         Interpret and execute Lox source
     """
     def __init__(self) -> None:
-        self.global_env = environment.Environment()
+        self.global_env = Environment()
         self.local_env: dict[expr.Expr, int] = {}
         self.env = self.global_env
 
@@ -88,7 +87,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         self.local_env[expression] = depth
 
     def execute_block(
-        self, statements: list[stmt.Stmt], env: environment.Environment
+        self, statements: list[stmt.Stmt], env: Environment
     ) -> None:
         """Enter new scope and execute statements in this space."""
         previous = self.env
@@ -101,7 +100,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             self.env = previous
 
     def visit_block_stmt(self, statement: stmt.Block) -> None:
-        self.execute_block(statement.statements, environment.Environment(self.env))
+        self.execute_block(statement.statements, Environment(self.env))
 
     def visit_class_stmt(self, statement: stmt.Class) -> None:
         if statement.superclass is not None:
@@ -114,7 +113,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         self.env.define(statement.name.lexeme, None)
 
         if statement.superclass is not None:
-            self.env = environment.Environment(self.env)
+            self.env = Environment(self.env)
             self.env.define("super", superclass)
 
         methods = {}
@@ -423,7 +422,7 @@ class LoxFunction(LoxCallable):
     declaration : stmt.Function
         Statement that declares this function with its parameters and
         its body
-    closure : environment.Environment
+    closure : Environment
         Data structure to store references to surrounding variables upon
         function declaration
     is_initializer : bool
@@ -443,7 +442,7 @@ class LoxFunction(LoxCallable):
     def __init__(
         self,
         declaration: stmt.Function,
-        closure: environment.Environment,
+        closure: Environment,
         is_initializer: bool,
     ) -> None:
         self.declaration = declaration
@@ -472,7 +471,7 @@ class LoxFunction(LoxCallable):
         """
         # Define arguments in environment of function to execute statements in
         # the block without error.
-        env = environment.Environment(self.closure)
+        env = Environment(self.closure)
         for parameter, argument in zip(self.declaration.params, arguments):
             env.define(parameter.lexeme, argument)
 
@@ -503,7 +502,7 @@ class LoxFunction(LoxCallable):
         instance : LoxInstance
             Instance to bind `this` to
         """
-        env = environment.Environment(self.closure)
+        env = Environment(self.closure)
         env.define("this", instance)
         return LoxFunction(self.declaration, env, self.is_initializer)
 
@@ -653,3 +652,106 @@ class Return(RuntimeError):
 class Break(RuntimeError):
     """An object to raise to jump to the end of a loop."""
     pass
+
+
+class Environment:
+    """Table of bindings that associates variables to values.
+
+    Parameters
+    ----------
+    enclosing : Environment
+        Environment that wraps new environment created
+
+    Attributes
+    ----------
+    enclosing : Environment
+        Environment that wraps new environment created
+    values : dict[str, object]
+        Map of variables to values
+    """
+    def __init__(self, enclosing: Environment = None) -> None:
+        self.enclosing = enclosing
+        self.values: dict[str, object] = {}
+
+    def define(self, name: str, value: object) -> None:
+        """Define a (new) value in the environment."""
+        self.values[name] = value
+
+    def ancestor(self, distance: int) -> Environment:
+        """Return enclosing environment some distance from current."""
+        env = self
+        for i in range(distance):
+            env = env.enclosing
+        return env
+
+    def get_at(self, distance: int, name: str) -> object:
+        """Return value from some enclosing environment.
+
+        Parameters
+        ----------
+        distance : int
+            Distance from current environment to desired ancestor or
+            enclosing environment
+        name : str
+            Key of value to return
+        """
+        return self.ancestor(distance).values[name]
+
+    def assign_at(self, distance: int, name: tokens.Token, value: object) -> None:
+        """Set value for some enclosing environment.
+
+        Parameters
+        ----------
+        distance : int
+            Distance from current environment to desired ancestor or
+            enclosing environment
+        name : tokens.Token
+            Token with lexeme to use as key
+        value : object
+            Value to associate with key
+        """
+        self.ancestor(distance).values[name.lexeme] = value
+
+    def get(self, name: tokens.Token) -> object:
+        """Retrieve a value from the environment.
+
+        Parameters
+        ----------
+        name : tokens.Token
+            Token with lexeme to use as key
+
+        Raises
+        ------
+        LoxRuntimeError
+            Raise a runtime exception when undefined variable are used
+        """
+        if name.lexeme in self.values:
+            return self.values[name.lexeme]
+
+        if self.enclosing:
+            return self.enclosing.get(name)
+
+        raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
+
+    def assign(self, name: tokens.Token, value: object) -> None:
+        """Update a value in the environment.
+
+        Parameters
+        ----------
+        name : tokens.Token
+            Token with lexeme to use as key
+        value : object
+            New value
+
+        Raises
+        ------
+        LoxRuntimeError
+            Raise a runtime exception on attempt to update a key-value
+            pair that does not exist
+        """
+        if name.lexeme in self.values:
+            self.values[name.lexeme] = value
+        elif self.enclosing:
+            self.enclosing.assign(name, value)
+        else:
+            raise interpreter.LoxRuntimeError(name, f"undefined variable '{name.lexeme}'")
