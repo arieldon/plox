@@ -14,16 +14,36 @@ import tokens
 
 @unique
 class OperandType(IntFlag):
+    """Describe types for operations in Lox, combinations allowed."""
     NUMBER = 1
     STRING = 2
 
 
 class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
+    """Traverse syntax trees, translate Lox to Python, and execute.
+
+    Attributes
+    ----------
+    global_env : environment.Environment
+        Environment of variables, classes, functions declared in global
+        scope
+    local_env : dict[expr.Expr, int]
+        Environment of variables and functions declared in a local scope
+    env : environment.Environment
+        Environment of current scope
+
+    Methods
+    -------
+    interpret()
+        Interpret and execute Lox source
+    """
     def __init__(self) -> None:
         self.global_env = environment.Environment()
         self.local_env: dict[expr.Expr, int] = {}
         self.env = self.global_env
 
+        # Provide a native function in Lox that outputs time in seconds since
+        # Unix epoch.
         self.global_env.define(
             "clock",
             type(
@@ -38,6 +58,14 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         )
 
     def interpret(self, statements: list[stmt.Stmt], repl: bool) -> None:
+        """Interpret each statement and execute it accept() method.
+
+        In the REPL, expressions are printed without an explicit `print`
+        statement, hence the need for an additional conditional.
+
+        If a `LoxRuntimeError` is raised in a subroutine, unwind the
+        stack and handle the error here.
+        """
         try:
             for statement in statements:
                 if repl and isinstance(statement, stmt.Expression):
@@ -48,17 +76,21 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             lox.runtime_error(error)
 
     def evaluate(self, expression: expr.Expr) -> Any:
+        """Produce the value of an expression."""
         return expression.accept(self)
 
     def execute(self, statement: stmt.Stmt) -> None:
+        """Perform side effects of a statement."""
         statement.accept(self)
 
     def resolve(self, expression: expr.Expr, depth: int) -> None:
+        """Store number of scopes from variable use to find value."""
         self.local_env[expression] = depth
 
     def execute_block(
-        self, statements: list[None | stmt.Stmt], env: environment.Environment
+        self, statements: list[stmt.Stmt], env: environment.Environment
     ) -> None:
+        """Enter new scope and execute statements in this space."""
         previous = self.env
         try:
             self.env = env
@@ -197,7 +229,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             return item.get(expression.name)
         raise LoxRuntimeError(expression.name, "only instances have properties")
 
-    def visit_literal_expr(self, expression: expr.Literal) -> None | str | float:
+    def visit_literal_expr(self, expression: expr.Literal) -> str | float:
         return expression.value
 
     def visit_logical_expr(self, expression: expr.Logical) -> object:
@@ -223,11 +255,15 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
     def visit_super_expr(self, expression: expr.Super) -> object:
         distance = self.local_env[expression]
         superclass = self.env.get_at(distance, "super")
+        assert isinstance(superclass, LoxClass)
+
         item = self.env.get_at(distance - 1, "this")
+        assert isinstance(item, LoxInstance)
         if (method := superclass.find_method(expression.method.lexeme)) is None:
             raise LoxRuntimeError(
                 expression.method, f"undefined property '{expression.method.lexeme}'"
             )
+
         return method.bind(item)
 
     def visit_this_expr(self, expression: expr.This) -> object:
@@ -265,11 +301,17 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
             return self.evaluate(expression.else_expression)
 
     def look_up_variable(self, name: tokens.Token, expression: expr.Expr) -> object:
+        """Retrieve value of variable from proper scope.
+
+        `Resolver` from module `resolver` performed semantic analysis in
+        a prior pass of the source to determine the proper scope.
+        """
         if (distance := self.local_env.get(expression)) is not None:
             return self.env.get_at(distance, name.lexeme)
         return self.global_env.get(name)
 
     def is_truthy(self, item: object) -> bool:
+        """Determine the truth of an expression in Lox."""
         if not item:
             return False
         elif isinstance(item, bool):
@@ -277,6 +319,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         return True
 
     def is_equal(self, a: object, b: object) -> bool:
+        """Determine if two values are equivalent in Lox."""
         if a is None and b is None:
             return True
         elif a is None:
@@ -284,6 +327,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         return a == b
 
     def stringify(self, item: object) -> str:
+        """Convert a value into a string in Lox."""
         if item is None:
             return "nil"
 
@@ -301,6 +345,23 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
         expression: expr.Binary,
         operand_type: OperandType = OperandType.NUMBER | OperandType.STRING,
     ) -> str | float:
+        """Perform an operation given a binary expression.
+
+        This function serves as a helper function for
+        visit_binary_expr() above.
+
+        Parameters
+        ----------
+        operator : Callable[[str | float, str | float], str | float]
+            A function that requires two arguments and returns a single
+            value
+        expression : expr.Binary
+            Binary expression that contains two expressions, left and
+            right
+        operand_type : OperandType
+            The acceptable type for provided operands based on the
+            operation to be performed
+        """
         assert operand_type != 0, "`operator` must some type of variable"
 
         l = self.evaluate(expression.left)
@@ -322,6 +383,16 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
 
 
 class LoxRuntimeError(RuntimeError):
+    """An indicator of some error during runtime.
+
+    Parameters
+    ----------
+    token : tokens.Token
+        Token where error occurred
+    message : str
+        Error message
+    """
+
     def __init__(self, token: tokens.Token, message: str) -> None:
         self.token = token
         self.message = message
@@ -331,16 +402,44 @@ class LoxRuntimeError(RuntimeError):
 
 
 class LoxCallable(ABC):
+    """Abstract class all Lox callable objects must inherit."""
+
     @abstractmethod
     def arity(self) -> int:
+        """Return the number of paramters a callable requires."""
         raise NotImplementedError
 
     @abstractmethod
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        """..."""
         raise NotImplementedError
 
 
 class LoxFunction(LoxCallable):
+    """An object that represents a function in Lox.
+
+    Parameters
+    ----------
+    declaration : stmt.Function
+        Statement that declares this function with its parameters and
+        its body
+    closure : environment.Environment
+        Data structure to store references to surrounding variables upon
+        function declaration
+    is_initializer : bool
+        Indicate whether the function is a constructor or initializer
+        for a class
+
+    Methods
+    -------
+    arity() : int
+        Return number of paramters passed to function
+    call() : object
+        Call the function, executing its statements
+    bind() : LoxFunction
+        Bind `this` default variable for a class method
+    """
+
     def __init__(
         self,
         declaration: stmt.Function,
@@ -352,9 +451,27 @@ class LoxFunction(LoxCallable):
         self.is_initializer = is_initializer
 
     def arity(self) -> int:
+        """Return number of paramters passed to function."""
         return len(self.declaration.params)
 
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        """Call the function, executing its statements.
+
+        Parameters
+        ----------
+        interpreter : Interpreter
+            Instance of interpreter
+        arguments : list[objects]
+            Arguments required by function
+
+        Raises
+        ------
+        Return
+            Propagate the value of a `return` statement from the
+            function in the source and pop it from the stack
+        """
+        # Define arguments in environment of function to execute statements in
+        # the block without error.
         env = environment.Environment(self.closure)
         for parameter, argument in zip(self.declaration.params, arguments):
             env.define(parameter.lexeme, argument)
@@ -362,6 +479,9 @@ class LoxFunction(LoxCallable):
         try:
             interpreter.execute_block(self.declaration.body, env)
         except Return as return_value:
+            # Catch a return statement executed in the function and unwind the
+            # stack to return the value to the proper scope in the interpreter.
+            # Then, continue -- this is not an error.
             if self.is_initializer:
                 return self.closure.get_at(0, "this")
             return return_value.value
@@ -372,6 +492,17 @@ class LoxFunction(LoxCallable):
         return None
 
     def bind(self, instance: LoxInstance) -> LoxFunction:
+        """Bind `this` default variable for a class method.
+
+        Implement `this` as a default variable in a closure around the
+        function. Create a closure around the original closure and
+        define "this" and `LoxInstance` as a key-value pair.
+
+        Parameters
+        ----------
+        instance : LoxInstance
+            Instance to bind `this` to
+        """
         env = environment.Environment(self.closure)
         env.define("this", instance)
         return LoxFunction(self.declaration, env, self.is_initializer)
@@ -381,6 +512,28 @@ class LoxFunction(LoxCallable):
 
 
 class LoxClass(LoxCallable):
+    """An object that represents a class in Lox.
+
+    Parameters
+    ----------
+    name : str
+        Name of class
+    superclass : LoxClass
+        Parent to inherit from for class
+    methods : dict[str, LoxFunction]
+        Methods of class
+
+    Methods
+    -------
+    arity() : int
+        Return number of parameters required to construct class
+    call() : object
+        Create an instance of the class
+    find_method() : LoxFunction
+        Return method of this class or that of one of its ancestors if
+        it exists
+    """
+
     def __init__(
         self, name: str, superclass: LoxClass, methods: dict[str, LoxFunction]
     ) -> None:
@@ -389,32 +542,76 @@ class LoxClass(LoxCallable):
         self.methods = methods
 
     def arity(self) -> int:
+        """Return number of parameters required to construct class."""
         if (initializer := self.find_method("init")) is None:
             return 0
         return initializer.arity()
 
     def call(self, interpreter: Interpreter, arguments: list[object]) -> object:
+        """Create an instance of the class.
+
+        Parameters
+        ----------
+        interpreter : Interpreter
+            Instance of Interpreter
+        arguments : list[object]
+            Arguments required by the class initializer or constructor
+        """
         instance = LoxInstance(self)
         if (initializer := self.find_method("init")) is not None:
             initializer.bind(instance).call(interpreter, arguments)
         return instance
 
-    def find_method(self, name: str) -> None | LoxFunction:
+    def find_method(self, name: str) -> LoxFunction:
+        """Return method of class or one of its ancestors if it exists.
+
+        Recursively search the inheritance lineage if the method is not
+        overloaded in the current class and return the first method with
+        a matching name.
+
+        Parameters
+        ----------
+        name : str
+            Name of method
+        """
         if (method := self.methods.get(name)) is not None:
             return method
         elif self.superclass is not None:
             return self.superclass.find_method(name)
+        return None
 
     def __str__(self) -> str:
         return self.name
 
 
 class LoxInstance:
+    """An object that represents an instance of a class in Lox.
+
+    Parameters
+    ----------
+    cls : LoxClass
+        Class of instance
+
+    Methods
+    -------
+    get() : object
+        Return a method or property of the instance
+    set() : None
+        Bind a new method or property to the instance
+    """
+
     def __init__(self, cls: LoxClass) -> None:
         self.cls = cls
         self.fields: dict[str, object] = {}
 
     def get(self, name: tokens.Token) -> object:
+        """Return a method or property of the instance.
+
+        Parameters
+        ----------
+        name : tokens.Token
+            Token with lexeme to search
+        """
         if name.lexeme in self.fields:
             return self.fields[name.lexeme]
 
@@ -424,6 +621,16 @@ class LoxInstance:
         raise LoxRuntimeError(name, f"undefined property '{name.lexeme}'")
 
     def set(self, name: str, value: object) -> None:
+        """Bind new method or property to the instance.
+
+        Parameters
+        ----------
+        name : str
+            Name of property
+        Value : object
+            String, number, callable, or other Lox type for respective
+            name
+        """
         self.fields[name] = value
 
     def __str__(self) -> str:
@@ -431,9 +638,18 @@ class LoxInstance:
 
 
 class Return(RuntimeError):
+    """An object to raise to return a value from a Lox callable.
+
+    Parameters
+    ----------
+    value : object
+        Value to return from Lox callable
+    """
+
     def __init__(self, value: object) -> None:
         self.value = value
 
 
 class Break(RuntimeError):
+    """An object to raise to jump to the end of a loop."""
     pass
