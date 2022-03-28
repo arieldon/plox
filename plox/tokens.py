@@ -3,6 +3,8 @@ from enum import auto, IntEnum, unique
 
 @unique
 class TokenType(IntEnum):
+    """Map token types in Lox to an integer for ease of use."""
+
     LEFT_PAREN = auto()
     RIGHT_PAREN = auto()
     LEFT_BRACE = auto()
@@ -52,11 +54,25 @@ class TokenType(IntEnum):
 
 
 class Token:
+    """Object to store relevant information for token together.
+
+    Parameters
+    ----------
+    token_type : TokenType
+        Enum that describes token
+    lexeme : str
+        Snippet of source that corresponds to scanned token
+    literal : str | float
+        Number or string or the like that corresponds to the lexeme
+    line : int
+        Line number of lexeme in source, used often in case of error
+        reporting
+    """
     def __init__(
         self,
         token_type: TokenType,
         lexeme: str,
-        literal: None | str | float,
+        literal: str | float,
         line: int,
     ):
         self.token_type = token_type
