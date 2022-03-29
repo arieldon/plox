@@ -50,7 +50,7 @@ class Interpreter(expr.Visitor[object], stmt.Visitor[None]):
                 (LoxCallable,),
                 {
                     "arity": lambda _: 0,
-                    "call": lambda _, x, y: time() / 1000,
+                    "call": lambda _, x, y: time(),
                     "__str__": lambda _: "<native fn>",
                 },
             )(),
