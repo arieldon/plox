@@ -1,0 +1,19 @@
+/*
+ * This is a snippet of code from the book that initially confused me because
+ * it was my first encounter with closures. I expected the output to be "A" and
+ * "a". Instead, it was "A" and "A" (by design) since Lox supports closures.
+ *
+ * However, when unused local variables are reported as errors, the interpreter
+ * spares the programmer from this confusion. Now, this does not run.
+ */
+
+var A = "A";
+{
+    fun outputA() {
+        print A;
+    }
+
+    outputA();
+    var A = "a";
+    outputA();
+}

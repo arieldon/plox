@@ -1,0 +1,17 @@
+fun makeCounter() {
+    var i = 0;
+
+    // Define nested or local functions with support for closures.
+    fun count() {
+        i = i + 1;
+        print i;
+    }
+
+    return count;
+}
+
+// Count, slowly.
+var counter = makeCounter();
+counter();
+counter();
+counter();

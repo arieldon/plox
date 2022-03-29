@@ -1,0 +1,14 @@
+// Define recursive functions. Note, this implementation of Lox does not
+// support lists, so it's not possible to memoize these values here.
+fun fib(n) {
+    // Branch as usual.
+    if (n < 2) return n;
+    return fib(n - 2) + fib(n - 1);
+}
+
+// clock() is a built-in function that returns the number of seconds since the
+// Unix epoch.
+var start = clock();
+print fib(25);
+var stop = clock();
+print stop - start;

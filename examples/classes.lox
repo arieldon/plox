@@ -1,0 +1,29 @@
+// Create a new class.
+class Animal {
+    sound() {
+        print "*insert animal sound*";
+    }
+}
+
+// Create a class that inherits from another.
+class Donkey < Animal {
+    // Write a custom constructor and set properties.
+    init(tail) {
+        this.tail = tail;
+        this.legs = 4;
+    }
+
+    sound() {
+        print "*insert donkey sound*";
+    }
+}
+
+// Create an instance of a class.
+var donkey = Donkey(true);
+
+// Call a method.
+donkey.sound();
+
+// Access properties on an instance of a class.
+print donkey.tail;
+print donkey.legs;

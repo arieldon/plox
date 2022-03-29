@@ -1,0 +1,28 @@
+// Declare and define a function.
+fun add(a, b) {
+    return a + b;
+}
+
+fun sillyMul(a, b) {
+    var c = 0;
+
+    // Use traditional for loops. While loops are also supported.
+    for (; b > 0; b = b - 1) {
+        c = c + a;
+    }
+
+    return c;
+}
+
+// Function are first class.
+fun op(f, a, b) {
+    // Call a function
+    return f(a, b);
+}
+
+// Declare and define multiple variables in a single declaration.
+var x = true, y = false;
+
+// Output the result of a function where one of the parameters is also a
+// (useless) conditonal statement.
+print op(x or y ? sillyMul : add, 42, 2);
