@@ -175,6 +175,7 @@ class Parser:
 
         self.consume(TokenType.LEFT_BRACE, f"expect '{{' before {kind} body")
         body = self.block()
+
         return stmt.Function(name, parameters, body)
 
     def var_declaration(self) -> stmt.Stmt:
@@ -399,11 +400,11 @@ class Parser:
     def finish_call(self, callee: expr.Expr) -> expr.Expr:
         arguments = []
         if not self.check(TokenType.RIGHT_PAREN):
-            arguments.append(self.expression())
+            arguments.append(self.conditional())
             while self.match(TokenType.COMMA):
                 if len(arguments) >= 255:
                     self.error(self.peek(), "cannot exceed 255 arguments")
-                arguments.append(self.expression())
+                arguments.append(self.conditional())
 
         paren = self.consume(TokenType.RIGHT_PAREN, "expect ')' after arguments")
         return expr.Call(callee, paren, arguments)
